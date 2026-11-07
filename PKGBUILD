@@ -8,7 +8,7 @@ license=('MIT')
 depends=('python' 'python-cryptography')
 makedepends=('python-setuptools')
 source=("${pkgname}-${pkgver}.tar.gz::https://github.com/Spruhantom/tomos-premiumgen/archive/refs/tags/v${pkgver}.tar.gz")
-sha256sums=('SKIP')
+sha256sums=('SKIP') # Replace with updpkgsums output before publishing a tagged package
 
 package() {
   cd "${srcdir}/tomos-premiumgen-${pkgver}"
