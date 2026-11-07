@@ -89,6 +89,7 @@ def issue_licence(private_path: Path, customer: str = "") -> tuple[str, dict[str
     return code, {
         "payload": payload,
         "signature_algorithm": "Ed25519",
+        "signed_payload": base64.b64encode(_canonical_json(payload)).decode("ascii"),
         "signature": base64.b64encode(signature).decode("ascii"),
     }
 
@@ -120,8 +121,11 @@ def verify_licence(public_path: Path, document: dict[str, Any]) -> bool:
         uuid.UUID(payload["licence_id"])
         if not isinstance(payload.get("activation_code_sha256"), str) or not re.fullmatch(r"[0-9a-f]{64}", payload["activation_code_sha256"]):
             return False
+        signed_payload = base64.b64decode(document["signed_payload"], validate=True)
+        if signed_payload != _canonical_json(payload):
+            return False
         signature = base64.b64decode(document["signature"], validate=True)
-        _public_key(public_path).verify(signature, _canonical_json(payload))
+        _public_key(public_path).verify(signature, signed_payload)
         return True
     except (KeyError, TypeError, ValueError, OSError):
         return False
