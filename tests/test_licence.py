@@ -26,7 +26,20 @@ class LicenceTests(unittest.TestCase):
     def test_activation_code_matches_only_its_licence(self):
         code, licence = issue_licence(self.private)
         self.assertTrue(activation_code_matches(code, licence))
+        self.assertTrue(activation_code_matches(code.lower(), licence))
+        self.assertTrue(activation_code_matches("  " + code.replace("-", " - ") + "  ", licence))
         self.assertFalse(activation_code_matches("TOMOS-PREM-AAAA-BBBB-CCCC-DDDD", licence))
+
+    def test_activation_code_rejects_malformed_and_unicode_input(self):
+        code, licence = issue_licence(self.private)
+        for invalid in (code + "!", code + "é", code.replace("-", ""), "TOMOS-PREM-0000-0000-0000-0000", None):
+            with self.subTest(invalid=invalid):
+                self.assertFalse(activation_code_matches(invalid, licence))
+
+    def test_activation_code_rejects_malformed_document(self):
+        code, licence = issue_licence(self.private)
+        self.assertFalse(activation_code_matches(code, {}))
+        self.assertFalse(activation_code_matches(code, {"payload": None}))
 
     def test_tampered_payload_fails(self):
         _, licence = issue_licence(self.private)
@@ -34,8 +47,8 @@ class LicenceTests(unittest.TestCase):
         self.assertFalse(verify_licence(self.public, licence))
 
     def test_wrong_public_key_fails(self):
-        _, licence = issue_licence(self.private)
         root = Path(self.temp.name)
+        _, licence = issue_licence(self.private)
         other_private, other_public = root / "other.pem", root / "other.pub"
         generate_keypair(other_private, other_public)
         self.assertFalse(verify_licence(other_public, licence))
