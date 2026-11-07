@@ -11,14 +11,14 @@ import sqlite3
 from pathlib import Path
 from typing import Optional
 
-from fastapi import FastAPI, Header, HTTPException
+from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel, Field
 
-from tomos_premiumgen.licence import read_json, verify_licence
+
 
 DB_PATH = Path(os.environ.get("TOMOS_LICENCE_DB", "tomos-licences.sqlite3"))
 PUBLIC_KEY = Path(os.environ.get("TOMOS_PUBLIC_KEY", "public.pem"))
-ADMIN_TOKEN = os.environ.get("TOMOS_ADMIN_TOKEN", "")
+
 
 app = FastAPI(title="TomOS Premium Licence API", version="0.1.0")
 
