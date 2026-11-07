@@ -19,6 +19,16 @@ source .venv/bin/activate
 pip install -e .
 ```
 
+## Install from PKGBUILD
+
+After creating a tagged release `v0.1.0`, build and install the Arch package:
+
+```bash
+makepkg -si
+```
+
+The PKGBUILD currently uses a source checksum placeholder. Before publishing an AUR package or using the PKGBUILD for production, replace `sha256sums=('SKIP')` with the verified source archive SHA-256.
+
 ## Generate the signing key
 
 Run on a trusted admin machine:
