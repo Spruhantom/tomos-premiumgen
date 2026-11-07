@@ -65,9 +65,12 @@ def main() -> int:
             args.database.parent.mkdir(parents=True, exist_ok=True)
             normalized = args.activation_code.strip().upper().replace(" ", "")
             digest = hashlib.sha256(normalized.encode("ascii")).hexdigest()
-            with sqlite3.connect(args.database) as db:
-                db.execute("CREATE TABLE IF NOT EXISTS licences (code_hash TEXT PRIMARY KEY, licence_id TEXT NOT NULL UNIQUE, licence_json TEXT NOT NULL, device_id TEXT, redeemed_at TEXT)")
-                db.execute("INSERT INTO licences (code_hash, licence_id, licence_json) VALUES (?, ?, ?)", (digest, document["payload"]["licence_id"], json.dumps(document, separators=(",", ":"))))
+            try:
+                with sqlite3.connect(args.database) as db:
+                    db.execute("CREATE TABLE IF NOT EXISTS licences (code_hash TEXT PRIMARY KEY, licence_id TEXT NOT NULL UNIQUE, licence_json TEXT NOT NULL, device_id TEXT, redeemed_at TEXT)")
+                    db.execute("INSERT INTO licences (code_hash, licence_id, licence_json) VALUES (?, ?, ?)", (digest, document["payload"]["licence_id"], json.dumps(document, separators=(",", ":"))))
+            except sqlite3.IntegrityError as error:
+                raise ValueError("This activation code or licence has already been registered.") from error
             print(f"Registered licence {document['payload']['licence_id']} in {args.database}")
             return 0
 
