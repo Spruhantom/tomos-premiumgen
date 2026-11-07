@@ -19,6 +19,7 @@ PRODUCT = "tomos-sip"
 SCHEMA_VERSION = 1
 FEATURES = ("multiple_sip_accounts", "advanced_codec_controls", "encrypted_backup")
 CODE_PREFIX = "TOMOS-PREM"
+_CODE_PATTERN = re.compile(r"TOMOS-PREM-(?:[A-Z2-7]{4}-){3}[A-Z2-7]{4}")
 
 
 def _canonical_json(value: dict[str, Any]) -> bytes:
@@ -95,14 +96,19 @@ def issue_licence(private_path: Path, customer: str = "") -> tuple[str, dict[str
 
 
 def activation_code_matches(code: str, document: dict[str, Any]) -> bool:
-    payload = document.get("payload", {})
-    normalized = code.strip().upper().replace(" ", "")
-    if not normalized.startswith(CODE_PREFIX + "-"):
+    """Compare a well-formed activation code without accepting lossy Unicode input."""
+    if not isinstance(code, str):
         return False
-    return secrets.compare_digest(
-        str(payload.get("activation_code_sha256", "")),
-        hashlib.sha256(normalized.encode("ascii", errors="ignore")).hexdigest(),
-    )
+    normalized = "".join(code.split()).upper()
+    if not _CODE_PATTERN.fullmatch(normalized):
+        return False
+    payload = document.get("payload", {})
+    if not isinstance(payload, dict):
+        return False
+    expected = payload.get("activation_code_sha256", "")
+    if not isinstance(expected, str) or not re.fullmatch(r"[0-9a-f]{64}", expected):
+        return False
+    return secrets.compare_digest(expected, hashlib.sha256(normalized.encode("ascii")).hexdigest())
 
 
 def verify_licence(public_path: Path, document: dict[str, Any]) -> bool:
