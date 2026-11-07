@@ -1,3 +1,5 @@
+import hashlib
+import json
 import tempfile
 import unittest
 from pathlib import Path
@@ -6,7 +8,12 @@ from unittest.mock import patch
 from fastapi import HTTPException
 
 from tomos_premiumgen import server
-from tomos_premiumgen.licence import generate_activation_code
+from tomos_premiumgen.licence import (
+    generate_activation_code,
+    generate_keypair,
+    issue_licence,
+    verify_licence,
+)
 
 
 class RedemptionApiTests(unittest.TestCase):
@@ -17,8 +24,6 @@ class RedemptionApiTests(unittest.TestCase):
         self.db_patch.start()
         self.code = generate_activation_code()
         self.document = {"payload": {"licence_id": "test-licence"}, "signature": "test"}
-        import hashlib
-        import json
         digest = hashlib.sha256(self.code.encode("ascii")).hexdigest()
         with server.connect() as db:
             db.execute(
@@ -62,6 +67,30 @@ class RedemptionApiTests(unittest.TestCase):
         with self.assertRaises(HTTPException) as caught:
             server.import_licence()
         self.assertEqual(caught.exception.status_code, 405)
+
+    def test_real_signed_licence_survives_redemption_api(self):
+        private_key = Path(self.temp.name) / "private.pem"
+        public_key = Path(self.temp.name) / "public.pem"
+        generate_keypair(private_key, public_key)
+        code, signed_document = issue_licence(private_key, "integration-test")
+        payload = signed_document["payload"]
+        digest = hashlib.sha256(code.encode("ascii")).hexdigest()
+        with server.connect() as db:
+            db.execute(
+                "INSERT INTO licences (code_hash, licence_id, licence_json) VALUES (?, ?, ?)",
+                (digest, payload["licence_id"], json.dumps(signed_document)),
+            )
+
+        response = server.redeem(
+            server.RedeemRequest(activation_code=code, device_id="android-installation-0001")
+        )
+        self.assertEqual(response.licence, signed_document)
+        self.assertTrue(verify_licence(public_key, response.licence))
+        self.assertEqual(response.licence["payload"]["features"], [
+            "multiple_sip_accounts",
+            "advanced_codec_controls",
+            "encrypted_backup",
+        ])
 
 
 if __name__ == "__main__":
