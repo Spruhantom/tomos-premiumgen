@@ -106,7 +106,7 @@ def activation_code_matches(code: str, document: dict[str, Any]) -> bool:
 
 def verify_licence(public_path: Path, document: dict[str, Any]) -> bool:
     try:
-        if set(document) != {"payload", "signature_algorithm", "signature"}:
+        if set(document) != {"payload", "signature_algorithm", "signed_payload", "signature"}:
             return False
         if document["signature_algorithm"] != "Ed25519":
             return False
