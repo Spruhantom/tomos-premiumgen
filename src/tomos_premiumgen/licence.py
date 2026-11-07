@@ -93,6 +93,17 @@ def issue_licence(private_path: Path, customer: str = "") -> tuple[str, dict[str
     }
 
 
+def activation_code_matches(code: str, document: dict[str, Any]) -> bool:
+    payload = document.get("payload", {})
+    normalized = code.strip().upper().replace(" ", "")
+    if not normalized.startswith(CODE_PREFIX + "-"):
+        return False
+    return secrets.compare_digest(
+        str(payload.get("activation_code_sha256", "")),
+        hashlib.sha256(normalized.encode("ascii", errors="ignore")).hexdigest(),
+    )
+
+
 def verify_licence(public_path: Path, document: dict[str, Any]) -> bool:
     try:
         if set(document) != {"payload", "signature_algorithm", "signature"}:
