@@ -6,7 +6,7 @@ import argparse
 import sys
 from pathlib import Path
 
-from .licence import generate_keypair, issue_licence, read_json, verify_licence, write_json
+from .licence import activation_code_matches, generate_keypair, issue_licence, read_json, verify_licence, write_json
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -22,6 +22,12 @@ def build_parser() -> argparse.ArgumentParser:
     generate.add_argument("--private-key", type=Path, required=True)
     generate.add_argument("--customer", default="", help="Optional internal customer reference; avoid personal data.")
     generate.add_argument("--output", type=Path, required=True)
+
+    register = commands.add_parser("register", help="Import a generated code and signed licence into the local redemption database.")
+    register.add_argument("--public-key", type=Path, required=True)
+    register.add_argument("--licence", type=Path, required=True)
+    register.add_argument("--activation-code", required=True)
+    register.add_argument("--database", type=Path, default=Path("tomos-licences.sqlite3"))
 
     verify = commands.add_parser("verify", help="Verify a signed licence file.")
     verify.add_argument("--public-key", type=Path, required=True)
@@ -47,6 +53,24 @@ def main() -> int:
             print(f"Signed licence document: {args.output}")
             print("Never commit activation codes or the private signing key.")
             return 0
+        if args.command == "register":
+            import hashlib
+            import json
+            import sqlite3
+            document = read_json(args.licence)
+            if not verify_licence(args.public_key, document):
+                raise ValueError("Licence signature or contents are invalid.")
+            if not activation_code_matches(args.activation_code, document):
+                raise ValueError("Activation code does not match this signed licence.")
+            args.database.parent.mkdir(parents=True, exist_ok=True)
+            normalized = args.activation_code.strip().upper().replace(" ", "")
+            digest = hashlib.sha256(normalized.encode("ascii")).hexdigest()
+            with sqlite3.connect(args.database) as db:
+                db.execute("CREATE TABLE IF NOT EXISTS licences (code_hash TEXT PRIMARY KEY, licence_id TEXT NOT NULL UNIQUE, licence_json TEXT NOT NULL, device_id TEXT, redeemed_at TEXT)")
+                db.execute("INSERT INTO licences (code_hash, licence_id, licence_json) VALUES (?, ?, ?)", (digest, document["payload"]["licence_id"], json.dumps(document, separators=(",", ":"))))
+            print(f"Registered licence {document['payload']['licence_id']} in {args.database}")
+            return 0
+
         if args.command == "verify":
             valid = verify_licence(args.public_key, read_json(args.licence))
             print("VALID: signed TomOS SIP Premium lifetime licence." if valid else "INVALID: signature or licence contents did not validate.")
