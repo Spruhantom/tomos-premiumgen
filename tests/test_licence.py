@@ -2,7 +2,7 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from tomos_premiumgen.licence import FEATURES, generate_keypair, issue_licence, verify_licence
+from tomos_premiumgen.licence import FEATURES, activation_code_matches, generate_keypair, issue_licence, verify_licence
 
 
 class LicenceTests(unittest.TestCase):
@@ -22,6 +22,11 @@ class LicenceTests(unittest.TestCase):
         self.assertTrue(verify_licence(self.public, licence))
         self.assertEqual(licence["payload"]["licence_type"], "lifetime")
         self.assertEqual(licence["payload"]["features"], list(FEATURES))
+
+    def test_activation_code_matches_only_its_licence(self):
+        code, licence = issue_licence(self.private)
+        self.assertTrue(activation_code_matches(code, licence))
+        self.assertFalse(activation_code_matches("TOMOS-PREM-AAAA-BBBB-CCCC-DDDD", licence))
 
     def test_tampered_payload_fails(self):
         _, licence = issue_licence(self.private)
