@@ -63,7 +63,7 @@ def main() -> int:
             if not activation_code_matches(args.activation_code, document):
                 raise ValueError("Activation code does not match this signed licence.")
             args.database.parent.mkdir(parents=True, exist_ok=True)
-            normalized = args.activation_code.strip().upper().replace(" ", "")
+            normalized = "".join(args.activation_code.split()).upper()
             digest = hashlib.sha256(normalized.encode("ascii")).hexdigest()
             try:
                 with sqlite3.connect(args.database) as db:
