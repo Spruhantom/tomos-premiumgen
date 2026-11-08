@@ -2,7 +2,7 @@
 
 A Python command-line utility for generating signed TomOS SIP Premium lifetime licences. Designed for Arch Linux and Omarchy Linux.
 
-## Offline activation (recommended)
+## Interactive terminal interface\n\nLaunch the guided TUI with:\n\n```bash\ntomos-premiumgen tui\n# or\ntomos-premiumgen-tui\n```\n\nThe menu can generate Ed25519 keys, issue online activation credentials, issue device-bound offline licences, and verify licence files. It runs locally; private signing keys are not uploaded.\n\n## Offline activation (recommended)
 
 Offline activation does not require an activation server or an internet connection on the customer's Android device. The customer shares the device UUID displayed in TomOS SIP with the administrator. The administrator issues a signed licence file, then transfers that file to the customer (USB, local file transfer, or another private channel).
 
