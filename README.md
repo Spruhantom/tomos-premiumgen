@@ -45,6 +45,53 @@ tomos-premiumgen tui
 tomos-premiumgen-tui
 ```
 
+
+## Optional online redemption server
+
+The optional FastAPI service lets TomOS SIP redeem a pre-issued activation code once and bind it to the first device that claims it. Install the server extra:
+
+```bash
+python -m pip install '.[server]'
+```
+
+Use the same database path for admin imports and the API process. Import a signed licence after checking its public-key signature:
+
+```bash
+export TOMOS_LICENCE_DB="$HOME/.local/share/tomos-premiumgen/licences.sqlite3"
+read -rsp "Activation code: " TOMOS_ACTIVATION_CODE
+printf '\\n'
+tomos-premiumgen register \\
+  --public-key ~/.config/tomos-premiumgen/public.pem \\
+  --licence ./licences/customer.json \\
+  --activation-code "$TOMOS_ACTIVATION_CODE" \\
+  --database "$TOMOS_LICENCE_DB"
+unset TOMOS_ACTIVATION_CODE
+```
+
+Start the API:
+
+```bash
+export TOMOS_LICENCE_DB="$HOME/.local/share/tomos-premiumgen/licences.sqlite3"
+tomos-premiumgen-server --host 127.0.0.1 --port 8000
+```
+
+The server binds to **127.0.0.1 by default**. Put it behind a properly configured HTTPS reverse proxy for remote devices; configure TLS, request-size limits, rate limiting, firewall rules and monitoring at that layer. Do not expose the development server directly to the public internet. The database file is created with owner-only permissions (0600).
+
+- `GET /health` returns a basic health status.
+- `POST /v1/redeem` accepts JSON containing `activation_code` and `device_id`, and returns the signed licence document.
+- The first device to redeem a code claims it. Repeated redemption from that same device is idempotent; a different device receives HTTP 409.
+- `POST /admin/import` is intentionally disabled. Import licences using the local `tomos-premiumgen register` command.
+
+Example request (replace the sample values with the customer's code and TomOS SIP device UUID):
+
+```bash
+curl -fsS http://127.0.0.1:8000/v1/redeem \\
+  -H 'Content-Type: application/json' \\
+  -d '{"activation_code":"TOMOS-PREM-ABCD-EFGH-IJKL-MNOP","device_id":"123e4567-e89b-12d3-a456-426614174000"}'
+```
+
+The Android application must verify the returned Ed25519 signature locally with its embedded public key before enabling Premium features. The API is a starter service, not a complete production licensing platform: it does not provide customer authentication, payment processing, remote revocation or distributed rate limiting.
+
 ## Offline activation
 
 The customer shares the device UUID displayed in TomOS SIP. The administrator issues a signed licence file, then transfers it securely to the customer:
