@@ -2,6 +2,8 @@ import hashlib
 import json
 import tempfile
 import unittest
+from concurrent.futures import ThreadPoolExecutor
+from threading import Barrier
 from pathlib import Path
 from unittest.mock import patch
 
@@ -62,6 +64,32 @@ class RedemptionApiTests(unittest.TestCase):
         with self.assertRaises(HTTPException) as caught:
             server.redeem(server.RedeemRequest(activation_code=generate_activation_code(), device_id="device-identifier-001"))
         self.assertEqual(caught.exception.status_code, 404)
+
+
+    def test_database_file_is_owner_only(self):
+        self.assertEqual(self.database.stat().st_mode & 0o777, 0o600)
+
+    def test_concurrent_redemption_by_different_devices_has_one_winner(self):
+        barrier = Barrier(3)
+
+        def attempt(device_id):
+            barrier.wait()
+            try:
+                server.redeem(server.RedeemRequest(
+                    activation_code=self.code,
+                    device_id=device_id,
+                ))
+                return 200
+            except HTTPException as error:
+                return error.status_code
+
+        with ThreadPoolExecutor(max_workers=2) as pool:
+            first = pool.submit(attempt, "device-race-test-0001")
+            second = pool.submit(attempt, "device-race-test-0002")
+            barrier.wait()
+            results = [first.result(timeout=15), second.result(timeout=15)]
+
+        self.assertCountEqual(results, [200, 409])
 
     def test_admin_import_endpoint_stays_disabled(self):
         with self.assertRaises(HTTPException) as caught:
