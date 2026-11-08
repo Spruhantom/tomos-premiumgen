@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import base64
-import hashlib
 import json
 import secrets
 import uuid
@@ -115,7 +114,7 @@ def verify_licence(public_path: Path, document: dict[str, Any]) -> bool:
         if payload.get("licence_type") != "lifetime" or payload.get("features") != list(FEATURES):
             return False
         uuid.UUID(payload["licence_id"])
-        if not isinstance(payload.get("activation_code_sha256"), str) or not re.fullmatch(r"[0-9a-f]{64}", payload["activation_code_sha256"]):
+        if not isinstance(payload.get("activation_code_sha256"), str) or len(payload["activation_code_sha256"]) != 64 or any(char not in "0123456789abcdef" for char in payload["activation_code_sha256"]):
             return False
         signed_payload = base64.b64decode(document["signed_payload"], validate=True)
         if signed_payload != _canonical_json(payload):
