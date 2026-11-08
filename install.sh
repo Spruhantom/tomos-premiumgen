@@ -73,6 +73,7 @@ if [[ ! -x "$VENV/bin/python" ]]; then
 fi
 "$VENV/bin/python" -m pip install --upgrade pip
 "$VENV/bin/python" -m pip install --upgrade "$SOURCE_DIR"
+"$VENV/bin/python" -c 'import gi; gi.require_version("Gtk", "4.0"); from gi.repository import Gtk; print("GTK 4 bindings verified")' || die "GTK 4 Python bindings are not visible inside the app environment."
 ln -sfn "$VENV/bin/tomos-premiumgen" "$BIN_DIR/tomos-premiumgen"
 ln -sfn "$VENV/bin/tomos-premiumgen-tui" "$BIN_DIR/tomos-premiumgen-tui"
 ln -sfn "$VENV/bin/tomos-premiumgen-gui" "$BIN_DIR/tomos-premiumgen-gui"
