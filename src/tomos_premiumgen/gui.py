@@ -6,6 +6,10 @@ the tested core modules; the CLI and Textual interface remain available.
 from __future__ import annotations
 
 from pathlib import Path
+import shlex
+import sys
+
+from .server_setup import install_user_service
 
 
 def run_gui() -> None:
@@ -66,6 +70,7 @@ def run_gui() -> None:
             self.build_online_page()
             self.build_offline_page()
             self.build_verify_page()
+            self.build_server_page()
             self.update_key_status()
             self.stack.set_visible_child_name("home")
 
@@ -197,6 +202,11 @@ def run_gui() -> None:
                     "Create or check the keys used to sign and verify licences.",
                     "keys",
                 ),
+                (
+                    "Redemption server setup",
+                    "Prepare a local service for customers to redeem online activation codes.",
+                    "server",
+                ),
             ]
             for title_text, description, destination in tasks:
                 button = Gtk.Button()
@@ -310,6 +320,88 @@ def run_gui() -> None:
                 str(documents_dir / "online-licence.json"), "open",
             )
             self.add_page_footer(page, "verify", "Verify licence", self.on_verify)
+
+        def build_server_page(self) -> None:
+            page, grid = self.make_page(
+                "server",
+                "Redemption server setup",
+                "Prepare a per-user systemd service for online activation. This wizard "
+                "keeps the API on this computer (127.0.0.1), does not start it, and "
+                "does not configure public internet access or HTTPS.",
+            )
+            self.add_field(
+                "server", grid, 0, "database", "Licence database",
+                str(Path.home() / ".local" / "share" / "tomos-premiumgen" / "licences.sqlite3"),
+            )
+            self.add_field(
+                "server", grid, 1, "port", "Local port", "8000",
+                placeholder="1–65535",
+            )
+            note = Gtk.Label(
+                label="After creating the service, install the optional FastAPI/uvicorn "
+                      "components if needed, then enable it with the commands shown. "
+                      "Import licences locally with the register command; never upload "
+                      "your signing key to the server."
+            )
+            note.set_wrap(True)
+            note.set_xalign(0)
+            note.add_css_class("dim-label")
+            page.append(note)
+            self.add_page_footer(
+                page, "server", "Prepare server service", self.on_server_setup
+            )
+
+        def on_server_setup(self, _button) -> None:
+            def operation():
+                database = self.get_path("server", "database")
+                port_text = self.get_value("server", "port")
+                if not port_text.isdecimal():
+                    raise ValueError("Enter a port number between 1 and 65535.")
+                port = int(port_text)
+                service = install_user_service(
+                    database, port, python_executable=sys.executable
+                )
+                pip_command = (
+                    f"{shlex.quote(sys.executable)} -m pip install "
+                    "'fastapi>=0.115.0' 'uvicorn[standard]>=0.30.0'"
+                )
+                start_command = (
+                    "systemctl --user daemon-reload && "
+                    "systemctl --user enable --now tomos-premiumgen.service"
+                )
+                health_command = f"curl -fsS http://127.0.0.1:{port}/health"
+                public_key = shlex.quote(str(default_public))
+                database_arg = shlex.quote(str(database))
+                register_command = (
+                    f"tomos-premiumgen register --public-key {public_key} "
+                    " --licence '<signed-licence.json>' "
+                    '--activation-code "$ACTIVATION_CODE" '
+                    f"--database {database_arg}"
+                )
+                return "\n".join([
+                    "SERVICE FILE CREATED — it has not been started.",
+                    f"Service: {service}",
+                    f"Database: {database}",
+                    f"Local address: 127.0.0.1:{port}",
+                    "",
+                    "1. Install the optional server components (if not already installed):",
+                    pip_command,
+                    "",
+                    "2. Enable and start the user service:",
+                    start_command,
+                    "",
+                    "3. Check its local health endpoint:",
+                    health_command,
+                    "",
+                    "4. Register each signed licence on this computer using:",
+                    register_command,
+                    "",
+                    "Keep the API behind an HTTPS reverse proxy before remote use. "
+                    "Do not expose this loopback service directly to the internet. "
+                    "This starter service does not include customer authentication, "
+                    "payment processing, remote revocation or distributed rate limiting.",
+                ])
+            self.run_action("server", operation)
 
         def show_page(self, name: str) -> None:
             self.stack.set_visible_child_name(name)

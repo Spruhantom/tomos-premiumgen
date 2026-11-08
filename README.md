@@ -28,12 +28,13 @@ Uninstall removes the application, command links and desktop entry. It deliberat
 
 ## GTK desktop workflow
 
-The desktop app now opens with four clear tasks instead of showing every field at once:
+The desktop app now opens with five clear tasks instead of showing every field at once:
 
 1. **Create online activation** — choose the signing key, optionally add a customer reference, and save the signed licence. The activation code is copied to the clipboard and displayed once; the private QR image is saved beside the licence.
 2. **Issue offline licence** — enter the device UUID shown in TomOS SIP and save a licence bound to that device.
 3. **Verify a licence** — select the public key and licence file to check the signature and supported licence contents.
 4. **Signing keys** — create the Ed25519 private/public key pair. The private key stays on the administrator's computer.
+5. **Redemption server setup** — prepare a loopback-only user service and private database directory; the wizard does not start or expose the service.
 
 Each task displays only the fields it needs, has a Home button, and reports success or a clear error. The command-line and Textual interfaces remain available for automation and terminal users.
 
@@ -93,6 +94,20 @@ curl -fsS http://127.0.0.1:8000/v1/redeem \
 ```
 
 The Android application must verify the returned Ed25519 signature locally with its embedded public key before enabling Premium features. The API is a starter service, not a complete production licensing platform: it does not provide customer authentication, payment processing, remote revocation or distributed rate limiting.
+
+## Guided redemption-server setup
+
+The GTK app includes a **Redemption server setup** task. It prepares a per-user
+systemd service and a private SQLite database directory. The generated service
+binds only to `127.0.0.1`; it is not enabled or started automatically, and an
+existing service file is never overwritten.
+
+After preparing the service, follow the commands shown in the app to install
+the optional FastAPI/uvicorn dependencies, enable the user service and check
+`/health`. Import each signed licence locally with the `register` command.
+For remote devices, place the API behind a correctly configured HTTPS reverse
+proxy with request limits, rate limiting, firewall rules and monitoring. Do not
+expose the development server directly to the public internet.
 
 ## Offline activation
 
