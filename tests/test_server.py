@@ -121,6 +121,16 @@ class RedemptionApiTests(unittest.TestCase):
         self.assertCountEqual(results, [200, 409])
 
 
+
+    def test_shared_android_cross_language_fixture_verifies(self):
+        fixture_path = Path(__file__).parent / "fixtures" / "premium_activation_fixture.json"
+        fixture = json.loads(fixture_path.read_text(encoding="utf-8"))
+        fixture_public_key = Path(self.temp.name) / "fixture-public.pem"
+        fixture_public_key.write_text(fixture["public_key_pem"], encoding="utf-8")
+        self.assertTrue(verify_licence(fixture_public_key, fixture["licence"]))
+        from tomos_premiumgen.licence import activation_code_matches
+        self.assertTrue(activation_code_matches(fixture["activation_code"], fixture["licence"]))
+
     def test_complete_cli_to_http_redemption_first_repeat_and_other_device(self):
         private_key = Path(self.temp.name) / "issuer-private.pem"
         public_key = Path(self.temp.name) / "issuer-public.pem"
