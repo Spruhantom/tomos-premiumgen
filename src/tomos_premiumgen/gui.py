@@ -372,31 +372,36 @@ def run_gui() -> None:
                 health_command = f"curl -fsS http://127.0.0.1:{port}/health"
                 public_key = shlex.quote(str(default_public))
                 database_arg = shlex.quote(str(database))
-                register_command = (
-                    "tomos-premiumgen register \\\n"
-                    f"  --public-key {public_key} \\\n"
-                    "  --licence <signed-licence.json> \\\n"
-                    '  --activation-code "$ACTIVATION_CODE" \\\n'
-                    f"  --database {database_arg}"
-                )
-                return (
-                    "SERVICE FILE CREATED — it has not been started.\\n\\n"
-                    f"Service: {service}\\n"
-                    f"Database: {database}\\n"
-                    f"Port: 127.0.0.1:{port}\\n\\n"
-                    "1. Install the optional server components (if not already installed):\\n"
-                    f"{pip_command}\\n\\n"
-                    "2. Enable and start the user service: \\n"
-                    f"{start_command}\\n\\n"
-                    "3. Check its local health endpoint: \\n"
-                    f"{health_command}\\n\\n"
-                    "4. Register each signed licence on this computer using: \\n"
-                    f"{register_command}\\n\\n"
+                register_command = "\n".join([
+                    "tomos-premiumgen register \\",
+                    f"  --public-key {public_key} \\",
+                    "  --licence <signed-licence.json> \\",
+                    '  --activation-code "$ACTIVATION_CODE" \\',
+                    f"  --database {database_arg}",
+                ])
+                return "\n".join([
+                    "SERVICE FILE CREATED — it has not been started.",
+                    f"Service: {service}",
+                    f"Database: {database}",
+                    f"Local address: 127.0.0.1:{port}",
+                    "",
+                    "1. Install the optional server components (if not already installed):",
+                    pip_command,
+                    "",
+                    "2. Enable and start the user service:",
+                    start_command,
+                    "",
+                    "3. Check its local health endpoint:",
+                    health_command,
+                    "",
+                    "4. Register each signed licence on this computer using:",
+                    register_command,
+                    "",
                     "Keep the API behind an HTTPS reverse proxy before remote use. "
                     "Do not expose this loopback service directly to the internet. "
                     "This starter service does not include customer authentication, "
-                    "payment processing, remote revocation or distributed rate limiting."
-                )
+                    "payment processing, remote revocation or distributed rate limiting.",
+                ])
             self.run_action("server", operation)
 
         def show_page(self, name: str) -> None:
