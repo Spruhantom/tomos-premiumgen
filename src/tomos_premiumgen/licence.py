@@ -12,6 +12,8 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
+import qrcode
+from qrcode.constants import ERROR_CORRECT_M
 from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey, Ed25519PublicKey
 
@@ -31,6 +33,19 @@ def generate_activation_code() -> str:
     raw = secrets.token_bytes(10)
     encoded = base64.b32encode(raw).decode("ascii").rstrip("=")
     return f"{CODE_PREFIX}-" + "-".join(encoded[i:i + 4] for i in range(0, 16, 4))
+
+
+def write_activation_qr(code: str, path: Path) -> None:
+    """Write a private PNG QR image containing only a validated one-time activation code."""
+    normalized = "".join(code.split()).upper() if isinstance(code, str) else ""
+    if not _CODE_PATTERN.fullmatch(normalized):
+        raise ValueError("Cannot create a QR code from an invalid activation code.")
+    path.parent.mkdir(parents=True, exist_ok=True)
+    qr = qrcode.QRCode(version=None, error_correction=ERROR_CORRECT_M, box_size=10, border=4)
+    qr.add_data(normalized)
+    qr.make(fit=True)
+    qr.make_image(fill_color="black", back_color="white").save(path, format="PNG")
+    path.chmod(0o600)
 
 
 def generate_keypair(private_path: Path, public_path: Path, overwrite: bool = False) -> None:
