@@ -6,7 +6,7 @@ import argparse
 import sys
 from pathlib import Path
 
-from .licence import activation_code_matches, generate_keypair, issue_licence, read_json, verify_licence, write_json
+from .licence import activation_code_matches, generate_keypair, issue_licence, read_json, verify_licence, write_activation_qr, write_json
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -18,10 +18,11 @@ def build_parser() -> argparse.ArgumentParser:
     keygen.add_argument("--public-key", type=Path, required=True)
     keygen.add_argument("--force", action="store_true", help="Explicitly allow replacing existing key files.")
 
-    generate = commands.add_parser("generate", help="Generate a one-time activation code and signed licence.")
+    generate = commands.add_parser("generate", help="Generate a one-time activation code, signed licence and QR image.")
     generate.add_argument("--private-key", type=Path, required=True)
     generate.add_argument("--customer", default="", help="Optional internal customer reference; avoid personal data.")
     generate.add_argument("--output", type=Path, required=True)
+    generate.add_argument("--qr-output", type=Path, help="QR PNG output path (default: <licence-output>.qr.png).")
 
     register = commands.add_parser("register", help="Import a generated code and signed licence into the local redemption database.")
     register.add_argument("--public-key", type=Path, required=True)
@@ -48,10 +49,13 @@ def main() -> int:
                 raise FileNotFoundError(f"Private key not found: {args.private_key}")
             code, document = issue_licence(args.private_key, args.customer)
             write_json(args.output, document)
+            qr_output = args.qr_output or args.output.with_suffix(".qr.png")
+            write_activation_qr(code, qr_output)
             print("Premium lifetime activation code (deliver privately; shown only once):")
             print(code)
             print(f"Signed licence document: {args.output}")
-            print("Never commit activation codes or the private signing key.")
+            print(f"Activation QR image: {qr_output} (keep private; it grants redemption access).")
+            print("Never commit activation codes, QR images or the private signing key.")
             return 0
         if args.command == "register":
             import hashlib
