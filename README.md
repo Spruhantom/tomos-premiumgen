@@ -1,10 +1,53 @@
 # TomOS Premium Generator
 
-A Python command-line utility for generating signed TomOS SIP Premium lifetime licences. Designed for Arch Linux and Omarchy Linux.
+TomOS Premium Generator creates and verifies Ed25519-signed lifetime licences for TomOS SIP. It provides a GTK 4 desktop application, a retained Textual TUI and a command-line interface.
 
-## One-line install (Arch Linux / Omarchy Linux)\n\nAfter this change is merged into `main`, install the generator with:\n\n```bash\ncurl -fsSL https://raw.githubusercontent.com/Spruhantom/tomos-premiumgen/main/install.sh | bash\n```\n\nThe installer creates an isolated Python virtual environment under `~/.local/share/tomos-premiumgen` and places command links in `~/.local/bin`. It does not use sudo or modify system Python. Ensure `~/.local/bin` is on your `PATH`. Review `install.sh` before piping it to Bash if you prefer to inspect installation scripts first.\n\n## Interactive terminal interface\n\nLaunch the guided TUI with:\n\n```bash\ntomos-premiumgen tui\n# or\ntomos-premiumgen-tui\n```\n\nThe menu can generate Ed25519 keys, issue online activation credentials, issue device-bound offline licences, and verify licence files. It runs locally; private signing keys are not uploaded.\n\n## Offline activation (recommended)
+## Install on Debian, Ubuntu, Fedora or Arch Linux
 
-Offline activation does not require an activation server or an internet connection on the customer's Android device. The customer shares the device UUID displayed in TomOS SIP with the administrator. The administrator issues a signed licence file, then transfers that file to the customer (USB, local file transfer, or another private channel).
+Review the installer before running it if you prefer to inspect scripts first:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/Spruhantom/tomos-premiumgen/main/install.sh | bash
+```
+
+The installer detects the distribution, installs GTK 4 and its Python bindings using the native package manager, then installs the Python application into an isolated per-user virtual environment. It creates a desktop-menu entry and does not run the application as root. The signing key is not created or copied by the installer.
+
+Launch **TomOS Premium Code Generator** from the desktop application menu, or run:
+
+```bash
+tomos-premiumgen-gui
+```
+
+To uninstall the application:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/Spruhantom/tomos-premiumgen/main/install.sh | bash -s -- --uninstall
+```
+
+Uninstall removes the application, command links and desktop entry. It deliberately leaves system GTK/Python dependencies and signing keys untouched.
+
+## GTK desktop features
+
+- Generate Ed25519 signing and verification keys.
+- Generate online lifetime activation codes, signed licence JSON and a private QR image.
+- Issue device-bound offline lifetime licences using the UUID displayed by TomOS SIP.
+- Verify signed licence documents.
+- Copy newly generated online activation codes to the clipboard.
+- Keep private signing keys on the local administrator machine.
+
+## CLI and TUI remain available
+
+The GTK app does not replace the existing automation interfaces:
+
+```bash
+tomos-premiumgen --help
+tomos-premiumgen tui
+tomos-premiumgen-tui
+```
+
+## Offline activation
+
+The customer shares the device UUID displayed in TomOS SIP. The administrator issues a signed licence file, then transfers it securely to the customer:
 
 ```bash
 tomos-premiumgen issue-offline \
@@ -14,55 +57,19 @@ tomos-premiumgen issue-offline \
   --output ./licences/customer.json
 ```
 
-The licence payload contains the device UUID and is signed with Ed25519. TomOS SIP must verify both the signature and that the embedded UUID matches its own installation ID before enabling Premium. A copied licence must not activate a different installation.
-
 ## Security model
 
 - The private Ed25519 signing key stays on the trusted generator machine and outside the repository.
 - Android contains only the public verification key.
-- Device IDs and licence files should be transferred privately.
-- A lifetime licence is device-bound; reinstalling the app or changing its installation identity may require a newly issued licence.
-- The offline workflow has no central redemption or revocation service. Protect the signing key and issue replacement licences deliberately.
-- The optional online redemption command remains available, but is not required for offline activation.
+- Activation codes, QR images and licence files grant activation access and must be delivered privately.
+- The GUI creates private key and licence files with restrictive file permissions through the shared core implementation.
+- The installer does not create, upload, back up or replace signing keys.
+- The offline workflow has no central redemption or revocation service.
 
-## Arch Linux / Omarchy Linux
-
-```bash
-sudo pacman -S --needed python python-pip python-cryptography
-python -m venv .venv
-source .venv/bin/activate
-pip install -e .
-```
-
-## Generate the signing key
-
-Run on a trusted administrator machine:
-
-```bash
-tomos-premiumgen keygen --private-key ~/.config/tomos-premiumgen/private.pem --public-key public.pem
-chmod 600 ~/.config/tomos-premiumgen/private.pem
-```
-
-Never commit or distribute the private key. Only the public key may be embedded in the Android application.
-
-## Optional online activation code
-
-```bash
-tomos-premiumgen generate --private-key ~/.config/tomos-premiumgen/private.pem --customer "Internal reference" --output ./licences/customer.json
-```
-
-This generates an activation code, signed licence and private QR image for the optional online redemption service.
-
-## Verify a licence file
-
-```bash
-tomos-premiumgen verify --public-key ./public.pem --licence ./licences/customer.json
-```
+See [SECURITY.md](SECURITY.md) for signing-key handling.
 
 ## Tests
 
 ```bash
 python -m unittest discover -s tests -v
 ```
-
-See [SECURITY.md](SECURITY.md) for signing-key handling.
