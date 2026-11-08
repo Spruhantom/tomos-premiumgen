@@ -221,7 +221,7 @@ def run_gui() -> None:
                 page.append(button)
 
             security = Gtk.Label(
-                label="Security: keep the private signing key on this computer. "
+                label="Security: the private signing key stays on this computer. "
                       "Send activation codes and QR images to customers privately."
             )
             security.set_wrap(True)
@@ -434,10 +434,9 @@ def run_gui() -> None:
                     raise FileNotFoundError(f"Public verification key not found: {public}")
                 if not licence.is_file():
                     raise FileNotFoundError(f"Licence file not found: {licence}")
-                if verify_licence(public, read_json(licence)):
-                    return "VALID — the signature and licence contents are correct."
-                self.report("verify", "INVALID — the signature or licence contents did not validate.", error=True)
-                return self.status_labels["verify"].get_text()
+                if not verify_licence(public, read_json(licence)):
+                    raise ValueError("INVALID — the signature or licence contents did not validate.")
+                return "VALID — the signature and licence contents are correct."
 
             self.run_action("verify", operation)
 
