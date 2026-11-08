@@ -169,7 +169,7 @@ def run_gui() -> None:
                 qr = output.with_suffix(".qr.png")
                 write_json(output, document)
                 write_activation_qr(code, qr)
-                self.get_application().get_clipboard().set(code)
+                self.get_clipboard().set(code)
                 return (f"ONLINE LIFETIME LICENCE CREATED\n\nActivation code (also copied to clipboard):\n{code}\n\n"
                         f"Signed licence: {output}\nPrivate QR image: {qr}\n\n"
                         "Deliver the code and QR image privately. The code is shown only now.")
