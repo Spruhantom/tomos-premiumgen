@@ -9,7 +9,7 @@ The Ed25519 private signing key is the root of trust for Premium entitlements.
 - Restrict generator access to authorised administrators.
 - Plan public-key rotation before production issuance.
 
-Activation codes are bearer secrets. Deliver them privately and never put them in commits, issues, screenshots or support logs.
+Activation codes are bearer secrets. Deliver them privately and never put them in commits, issues, screenshots or support logs. The redemption service creates its SQLite database with owner-only file permissions (0600), creates a missing parent directory with restrictive permissions (0700), and refuses a symlink as the database file. Keep the database on a private persistent volume and restrict host access as well.
 
 ## Important limitations
 

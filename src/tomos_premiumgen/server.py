@@ -22,6 +22,15 @@ app = FastAPI(title="TomOS Premium Licence API", version="0.1.0")
 
 
 def connect() -> sqlite3.Connection:
+    # Licence records contain customer references and device bindings. Create
+    # the database with owner-only permissions and reject symlink destinations.
+    DB_PATH.parent.mkdir(parents=True, exist_ok=True, mode=0o700)
+    flags = os.O_CREAT | os.O_RDWR | getattr(os, "O_NOFOLLOW", 0)
+    fd = os.open(DB_PATH, flags, 0o600)
+    try:
+        os.fchmod(fd, 0o600)
+    finally:
+        os.close(fd)
     db = sqlite3.connect(DB_PATH, timeout=10)
     db.row_factory = sqlite3.Row
     db.execute("PRAGMA busy_timeout = 10000")
