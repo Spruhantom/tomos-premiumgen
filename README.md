@@ -111,7 +111,7 @@ tomos-premiumgen issue-offline \
 - Activation codes, QR images and licence files grant activation access and must be delivered privately.
 - The GUI creates private key and licence files with restrictive file permissions through the shared core implementation.
 - The installer does not create, upload, back up or replace signing keys.
-- The offline workflow has no central redemption or revocation service.
+- Offline device-bound licences work without a server and do not support central redemption or revocation.
 
 See [SECURITY.md](SECURITY.md) for signing-key handling.
 
