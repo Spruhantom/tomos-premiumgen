@@ -61,6 +61,12 @@ if [[ "$UNINSTALL" -eq 1 ]]; then
 fi
 
 [[ -n "$PUBLIC_IP" && -n "$ACME_EMAIL" ]] || { usage; die "Both --public-ip and --email are required."; }
+# Minimal Debian installations may not include Python yet; install it before validation.
+if ! command -v python3 >/dev/null 2>&1; then
+  export DEBIAN_FRONTEND=noninteractive
+  apt-get update
+  apt-get install -y python3
+fi
 python3 - "$PUBLIC_IP" "$ACME_EMAIL" <<'PY'
 import ipaddress, re, sys
 try:
