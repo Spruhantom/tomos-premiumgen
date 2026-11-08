@@ -1,6 +1,6 @@
 # TomOS Premium Generator
 
-A Python command-line utility for generating signed TomOS SIP Premium lifetime licences. Designed for Arch Linux and other Linux distributions.
+A Python command-line utility for generating signed TomOS SIP Premium lifetime licences and private activation QR images. Designed for Arch Linux and other Linux distributions.
 
 ## Security model
 
@@ -8,7 +8,10 @@ A Python command-line utility for generating signed TomOS SIP Premium lifetime l
 - The generator keeps the private signing key outside the repository.
 - The Android app will embed only the public verification key.
 - Generated lifetime licences include an ID, issue timestamp, customer reference and the initial Premium feature list.
-- A future activation service must redeem codes once and bind licences to devices. This local tool is not a complete purchase, redemption, revocation or activation backend.
+- The activation QR contains the one-time activation code only. It does not contain a signing key or an unsigned entitlement.
+- Redemption remains online, HTTPS-only and bound to the first device that redeems the code.
+- Treat QR images exactly like activation codes: deliver privately and never commit, publish or include them in logs or screenshots.
+- This local tool is not a complete purchase, redemption, revocation or activation backend.
 
 ## Arch Linux
 
@@ -40,13 +43,17 @@ chmod 600 ~/.config/tomos-premiumgen/private.pem
 
 Never commit or distribute the private key. Only the public key may be embedded in the Android application.
 
-## Generate a lifetime code and signed licence
+## Generate a lifetime code, signed licence and QR image
 
 ```bash
 tomos-premiumgen generate --private-key ~/.config/tomos-premiumgen/private.pem --customer "Internal reference" --output ./licences/customer.json
 ```
 
-The activation code is displayed once. Deliver it privately and never put it in GitHub, logs or screenshots.
+This creates:
+- `customer.json`: the Ed25519-signed lifetime licence.
+- `customer.qr.png`: a QR image containing the one-time activation code, saved with owner-only permissions.
+
+Use `--qr-output /secure/path/customer.png` to choose a different QR image path. The activation code is displayed once. Deliver the code and QR image privately; either can be used to redeem the licence.
 
 ## Verify a licence file
 
