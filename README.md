@@ -94,6 +94,20 @@ curl -fsS http://127.0.0.1:8000/v1/redeem \
 
 The Android application must verify the returned Ed25519 signature locally with its embedded public key before enabling Premium features. The API is a starter service, not a complete production licensing platform: it does not provide customer authentication, payment processing, remote revocation or distributed rate limiting.
 
+## Guided redemption-server setup
+
+The GTK app includes a **Redemption server setup** task. It prepares a per-user
+systemd service and a private SQLite database directory. The generated service
+binds only to `127.0.0.1`; it is not enabled or started automatically, and an
+existing service file is never overwritten.
+
+After preparing the service, follow the commands shown in the app to install
+the optional FastAPI/uvicorn dependencies, enable the user service and check
+`/health`. Import each signed licence locally with the `register` command.
+For remote devices, place the API behind a correctly configured HTTPS reverse
+proxy with request limits, rate limiting, firewall rules and monitoring. Do not
+expose the development server directly to the public internet.
+
 ## Offline activation
 
 The customer shares the device UUID displayed in TomOS SIP. The administrator issues a signed licence file, then transfers it securely to the customer:
