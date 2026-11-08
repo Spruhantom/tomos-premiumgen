@@ -59,11 +59,11 @@ Use the same database path for admin imports and the API process. Import a signe
 ```bash
 export TOMOS_LICENCE_DB="$HOME/.local/share/tomos-premiumgen/licences.sqlite3"
 read -rsp "Activation code: " TOMOS_ACTIVATION_CODE
-printf '\\n'
-tomos-premiumgen register \\
-  --public-key ~/.config/tomos-premiumgen/public.pem \\
-  --licence ./licences/customer.json \\
-  --activation-code "$TOMOS_ACTIVATION_CODE" \\
+printf '\n'
+tomos-premiumgen register \
+  --public-key ~/.config/tomos-premiumgen/public.pem \
+  --licence ./licences/customer.json \
+  --activation-code "$TOMOS_ACTIVATION_CODE" \
   --database "$TOMOS_LICENCE_DB"
 unset TOMOS_ACTIVATION_CODE
 ```
@@ -85,8 +85,8 @@ The server binds to **127.0.0.1 by default**. Put it behind a properly configure
 Example request (replace the sample values with the customer's code and TomOS SIP device UUID):
 
 ```bash
-curl -fsS http://127.0.0.1:8000/v1/redeem \\
-  -H 'Content-Type: application/json' \\
+curl -fsS http://127.0.0.1:8000/v1/redeem \
+  -H 'Content-Type: application/json' \
   -d '{"activation_code":"TOMOS-PREM-ABCD-EFGH-IJKL-MNOP","device_id":"123e4567-e89b-12d3-a456-426614174000"}'
 ```
 
