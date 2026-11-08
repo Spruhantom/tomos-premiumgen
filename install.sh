@@ -7,14 +7,16 @@ if [[ "${1:-}" == "--install-server" ]]; then
   SERVER_SCRIPT="$(mktemp)"
   trap 'rm -f "$SERVER_SCRIPT"' EXIT
   curl -fsSL "https://raw.githubusercontent.com/Spruhantom/tomos-premiumgen/main/server-install.sh" -o "$SERVER_SCRIPT"
-  exec bash "$SERVER_SCRIPT" "$@"
+  bash "$SERVER_SCRIPT" "$@"
+  exit $?
 fi
 if [[ "${1:-}" == "--uninstall-server" ]]; then
   shift
   SERVER_SCRIPT="$(mktemp)"
   trap 'rm -f "$SERVER_SCRIPT"' EXIT
   curl -fsSL "https://raw.githubusercontent.com/Spruhantom/tomos-premiumgen/main/server-install.sh" -o "$SERVER_SCRIPT"
-  exec bash "$SERVER_SCRIPT" --uninstall "$@"
+  bash "$SERVER_SCRIPT" --uninstall "$@"
+  exit $?
 fi
 
 APP_NAME="tomos-premiumgen"
