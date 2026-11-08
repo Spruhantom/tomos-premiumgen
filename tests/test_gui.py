@@ -15,12 +15,15 @@ class GtkEntryPointTests(unittest.TestCase):
         self.assertIn("private signing key stays on this computer", source)
         self.assertIn("self.get_clipboard().set(code)", source)
 
-    def test_gui_uses_four_separate_guided_tasks(self):
+    def test_gui_uses_five_separate_guided_tasks(self):
         source = Path(gui.__file__).read_text(encoding="utf-8")
         for page in ("online", "offline", "verify", "keys", "server"):
             with self.subTest(page=page):
                 self.assertIn(f"self.build_{page}_page()", source)
-                self.assertIn(f'self.add_page_footer(page, "{page}"', source)
+                if page == "server":
+                    self.assertIn('page, "server", "Prepare server service"', source)
+                else:
+                    self.assertIn(f'self.add_page_footer(page, "{page}"', source)
 
     def test_online_and_offline_pages_have_separate_inputs(self):
         source = Path(gui.__file__).read_text(encoding="utf-8")
