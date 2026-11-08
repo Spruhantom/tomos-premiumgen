@@ -2,7 +2,7 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from tomos_premiumgen.licence import FEATURES, activation_code_matches, generate_keypair, issue_licence, verify_licence
+from tomos_premiumgen.licence import FEATURES, activation_code_matches, generate_keypair, issue_licence, verify_licence, write_activation_qr
 
 
 class LicenceTests(unittest.TestCase):
@@ -40,6 +40,17 @@ class LicenceTests(unittest.TestCase):
         code, licence = issue_licence(self.private)
         self.assertFalse(activation_code_matches(code, {}))
         self.assertFalse(activation_code_matches(code, {"payload": None}))
+
+    def test_qr_image_contains_private_activation_credential(self):
+        code, _ = issue_licence(self.private)
+        output = Path(self.temp.name) / "private" / "activation.qr.png"
+        write_activation_qr(code, output)
+        self.assertTrue(output.read_bytes().startswith(b"\x89PNG\r\n\x1a\n"))
+        self.assertEqual(output.stat().st_mode & 0o777, 0o600)
+
+    def test_qr_generation_rejects_malformed_code(self):
+        with self.assertRaises(ValueError):
+            write_activation_qr("TOMOS-PREM-AAAA-BBBB-CCCC-DDDD!", Path(self.temp.name) / "bad.png")
 
     def test_tampered_payload_fails(self):
         _, licence = issue_licence(self.private)
