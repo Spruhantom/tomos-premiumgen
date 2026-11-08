@@ -12,14 +12,12 @@ license = { text = "MIT" }
 dependencies = ["cryptography>=42.0.0", "qrcode[pil]>=8.2", "textual>=0.80.0"]
 
 [project.optional-dependencies]
-server = ["fastapi>=0.115.0", "uvicorn[standard]>=0.30.0"]
 test = ["httpx>=0.27.0"]
 
 [project.scripts]
 tomos-premiumgen = "tomos_premiumgen.cli:main"
 tomos-premiumgen-tui = "tomos_premiumgen.tui:run_tui"
 tomos-premiumgen-gui = "tomos_premiumgen.gui:run_gui"
-tomos-premiumgen-server = "tomos_premiumgen.server:main"
 
 [tool.setuptools]
 package-dir = {"" = "src"}

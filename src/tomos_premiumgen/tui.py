@@ -8,7 +8,7 @@ from textual.app import App, ComposeResult
 from textual.containers import Horizontal, Vertical
 from textual.widgets import Button, Footer, Header, Input, Label, Static
 
-from .licence import generate_keypair, read_json, verify_licence, write_activation_qr, write_offline_licence_qr, write_json, issue_licence
+from .licence import generate_keypair, read_json, verify_licence, write_offline_licence_qr, write_json
 from .offline import issue_offline_licence
 
 
@@ -43,10 +43,9 @@ class PremiumGeneratorApp(App[None]):
             yield Input("./licences/customer.json", id="output")
             yield Label("Licence file to verify", classes="field-label")
             yield Input("./licences/customer.json", id="licence")
-            yield Static("Keep the private key and generated activation credentials confidential.", id="warning")
+            yield Static("Keep the private key and generated licence files confidential.", id="warning")
         with Horizontal(id="actions"):
             yield Button("Generate keys", id="keygen", variant="primary")
-            yield Button("Online licence", id="online")
             yield Button("Offline licence", id="offline")
             yield Button("Verify licence", id="verify")
             yield Button("Quit", id="quit", variant="error")
@@ -72,14 +71,6 @@ class PremiumGeneratorApp(App[None]):
             if action == "keygen":
                 generate_keypair(private, public)
                 self.report(f"Keys created. Private key: {private} (keep secret; mode 0600). Public key: {public}")
-            elif action == "online":
-                if not private.is_file():
-                    raise FileNotFoundError(f"Private key not found: {private}")
-                code, document = issue_licence(private, customer)
-                write_json(output, document)
-                qr = output.with_suffix(".qr.png")
-                write_activation_qr(code, qr)
-                self.report(f"Online lifetime licence created: {output}\nActivation code (deliver privately): {code}\nPrivate QR image: {qr}")
             elif action == "offline":
                 if not private.is_file():
                     raise FileNotFoundError(f"Private key not found: {private}")

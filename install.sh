@@ -1,24 +1,3 @@
-#!/usr/bin/env bash
-set -Eeuo pipefail
-
-# The public installer delegates server mode to a dedicated Debian system-service installer.
-if [[ "${1:-}" == "--install-server" ]]; then
-  shift
-  SERVER_SCRIPT="$(mktemp)"
-  trap 'rm -f "$SERVER_SCRIPT"' EXIT
-  curl -fsSL "https://raw.githubusercontent.com/Spruhantom/tomos-premiumgen/main/server-install.sh" -o "$SERVER_SCRIPT"
-  bash "$SERVER_SCRIPT" "$@"
-  exit $?
-fi
-if [[ "${1:-}" == "--uninstall-server" ]]; then
-  shift
-  SERVER_SCRIPT="$(mktemp)"
-  trap 'rm -f "$SERVER_SCRIPT"' EXIT
-  curl -fsSL "https://raw.githubusercontent.com/Spruhantom/tomos-premiumgen/main/server-install.sh" -o "$SERVER_SCRIPT"
-  bash "$SERVER_SCRIPT" --uninstall "$@"
-  exit $?
-fi
-
 APP_NAME="tomos-premiumgen"
 INSTALL_DIR="${XDG_DATA_HOME:-$HOME/.local/share}/${APP_NAME}"
 BIN_DIR="${XDG_BIN_HOME:-$HOME/.local/bin}"
