@@ -14,7 +14,7 @@ tomos-premiumgen issue-offline \
   --output ./licences/customer.json
 ```
 
-The licence payload contains the device UUID and is signed with Ed25519. TomOS SIP must verify both the signature and that the embedded UUID matches its own installation ID before enabling Premium. A copied licence must not activate a different installation.
+The licence payload contains the device UUID and is signed with Ed25519. The command also creates `./licences/customer.qr.png`, containing the complete signed licence JSON. The QR image is private data and is written with owner-only permissions. TomOS SIP must verify both the signature and that the embedded UUID matches its own installation ID before enabling Premium. A copied licence must not activate a different installation. QR scanning/import must be supported by the receiving app; otherwise transfer the JSON file directly.
 
 ## Security model
 
