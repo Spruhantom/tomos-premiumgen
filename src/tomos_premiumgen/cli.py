@@ -8,6 +8,7 @@ from pathlib import Path
 
 from .licence import activation_code_matches, generate_keypair, issue_licence, read_json, verify_licence, write_activation_qr, write_json
 from .offline import issue_offline_licence
+from .storage import connect_licence_db
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -88,12 +89,10 @@ def main() -> int:
                 raise ValueError("Licence signature or contents are invalid.")
             if not activation_code_matches(args.activation_code, document):
                 raise ValueError("Activation code does not match this signed licence.")
-            args.database.parent.mkdir(parents=True, exist_ok=True)
             normalized = "".join(args.activation_code.split()).upper()
             digest = hashlib.sha256(normalized.encode("ascii")).hexdigest()
             try:
-                with sqlite3.connect(args.database) as db:
-                    db.execute("CREATE TABLE IF NOT EXISTS licences (code_hash TEXT PRIMARY KEY, licence_id TEXT NOT NULL UNIQUE, licence_json TEXT NOT NULL, device_id TEXT, redeemed_at TEXT)")
+                with connect_licence_db(args.database) as db:
                     db.execute("INSERT INTO licences (code_hash, licence_id, licence_json) VALUES (?, ?, ?)", (digest, document["payload"]["licence_id"], json.dumps(document, separators=(",", ":"))))
             except sqlite3.IntegrityError as error:
                 raise ValueError("This activation code or licence has already been registered.") from error
