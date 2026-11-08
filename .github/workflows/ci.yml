@@ -28,6 +28,8 @@ jobs:
           python -c "from tomos_premiumgen.gui import run_gui; assert callable(run_gui)"
       - name: Check installer syntax
         run: bash -n install.sh
+      - name: Test installer distribution detection without system changes
+        run: bash tests/test_installer.sh
 
   gtk-smoke:
     runs-on: ubuntu-latest
