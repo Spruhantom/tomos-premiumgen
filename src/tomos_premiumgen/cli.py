@@ -37,6 +37,8 @@ def build_parser() -> argparse.ArgumentParser:
     register.add_argument("--activation-code", required=True)
     register.add_argument("--database", type=Path, default=Path("tomos-licences.sqlite3"))
 
+    commands.add_parser("tui", help="Open the interactive terminal interface.")
+
     verify = commands.add_parser("verify", help="Verify a signed licence file.")
     verify.add_argument("--public-key", type=Path, required=True)
     verify.add_argument("--licence", type=Path, required=True)
@@ -45,6 +47,10 @@ def build_parser() -> argparse.ArgumentParser:
 
 def main() -> int:
     args = build_parser().parse_args()
+    if args.command == "tui":
+        from .tui import run_tui
+        run_tui()
+        return 0
     try:
         if args.command == "keygen":
             generate_keypair(args.private_key, args.public_key, args.force)

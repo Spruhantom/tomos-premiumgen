@@ -9,13 +9,14 @@ description = "TomOS SIP Premium lifetime licence generator"
 readme = "README.md"
 requires-python = ">=3.10"
 license = { text = "MIT" }
-dependencies = ["cryptography>=42.0.0", "qrcode[pil]>=8.2"]
+dependencies = ["cryptography>=42.0.0", "qrcode[pil]>=8.2", "textual>=0.80.0"]
 
 [project.optional-dependencies]
 server = ["fastapi>=0.115.0", "uvicorn[standard]>=0.30.0"]
 
 [project.scripts]
 tomos-premiumgen = "tomos_premiumgen.cli:main"
+tomos-premiumgen-tui = "tomos_premiumgen.tui:run_tui"
 
 [tool.setuptools]
 package-dir = {"" = "src"}
