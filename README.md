@@ -173,7 +173,7 @@ expose the development server directly to the public internet.
 
 ## Offline activation
 
-The customer shares the device UUID displayed in TomOS SIP. The administrator issues a signed licence file, then transfers it securely to the customer:
+The customer shares the device UUID displayed in TomOS SIP. The administrator issues a signed licence file and a companion QR PNG (`<licence-output>.qr.png`) containing the complete signed JSON. Both are confidential activation material and must be transferred securely. The receiving app must support QR scanning/import; otherwise transfer the JSON file directly:
 
 ```bash
 tomos-premiumgen issue-offline \
