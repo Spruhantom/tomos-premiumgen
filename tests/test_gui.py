@@ -19,8 +19,8 @@ class GtkEntryPointTests(unittest.TestCase):
         source = Path(gui.__file__).read_text(encoding="utf-8")
         for page in ("online", "offline", "verify", "keys"):
             with self.subTest(page=page):
-                self.assertIn(`self.build_${page}_page()`, source)
-                self.assertIn(`self.add_page_footer(page, "${page}"`, source)
+                self.assertIn(f"self.build_{page}_page()", source)
+                self.assertIn(f'self.add_page_footer(page, "{page}"', source)
 
     def test_online_and_offline_pages_have_separate_inputs(self):
         source = Path(gui.__file__).read_text(encoding="utf-8")
