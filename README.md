@@ -28,12 +28,13 @@ Uninstall removes the application, command links and desktop entry. It deliberat
 
 ## GTK desktop workflow
 
-The desktop app now opens with four clear tasks instead of showing every field at once:
+The desktop app now opens with five clear tasks instead of showing every field at once:
 
 1. **Create online activation** — choose the signing key, optionally add a customer reference, and save the signed licence. The activation code is copied to the clipboard and displayed once; the private QR image is saved beside the licence.
 2. **Issue offline licence** — enter the device UUID shown in TomOS SIP and save a licence bound to that device.
 3. **Verify a licence** — select the public key and licence file to check the signature and supported licence contents.
 4. **Signing keys** — create the Ed25519 private/public key pair. The private key stays on the administrator's computer.
+5. **Redemption server setup** — prepare a loopback-only user service and private database directory; the wizard does not start or expose the service.
 
 Each task displays only the fields it needs, has a Home button, and reports success or a clear error. The command-line and Textual interfaces remain available for automation and terminal users.
 
