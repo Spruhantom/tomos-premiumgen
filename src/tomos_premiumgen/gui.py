@@ -216,7 +216,7 @@ def run_gui() -> None:
 
             security = Gtk.Label(
                 label="Security: the private signing key stays on this computer. "
-                      "Send activation codes and QR images to customers privately."
+                      "Transfer device-bound licence files and QR images privately."
             )
             security.set_wrap(True)
             security.set_xalign(0)
@@ -280,7 +280,7 @@ def run_gui() -> None:
             )
             self.add_field(
                 "verify", grid, 1, "licence", "Licence file",
-                str(documents_dir / "online-licence.json"), "open",
+                str(documents_dir / "offline-licence.json"), "open",
             )
             self.add_page_footer(page, "verify", "Verify licence", self.on_verify)
 
