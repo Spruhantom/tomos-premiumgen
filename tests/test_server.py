@@ -69,6 +69,17 @@ class RedemptionApiTests(unittest.TestCase):
     def test_database_file_is_owner_only(self):
         self.assertEqual(self.database.stat().st_mode & 0o777, 0o600)
 
+
+    def test_database_symlink_destination_is_rejected(self):
+        target = Path(self.temp.name) / "target.sqlite3"
+        target.write_bytes(b"do-not-touch")
+        link = Path(self.temp.name) / "linked.sqlite3"
+        link.symlink_to(target)
+        with patch.object(server, "DB_PATH", link):
+            with self.assertRaises(OSError):
+                server.connect()
+        self.assertEqual(target.read_bytes(), b"do-not-touch")
+
     def test_concurrent_redemption_by_different_devices_has_one_winner(self):
         barrier = Barrier(3)
 
