@@ -17,6 +17,7 @@ from tomos_premiumgen.licence import (
     generate_keypair,
     issue_licence,
     verify_licence,
+    write_json,
 )
 
 
