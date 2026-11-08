@@ -5,7 +5,6 @@ from __future__ import annotations
 import base64
 import hashlib
 import json
-import re
 import secrets
 import uuid
 from datetime import datetime, timezone
@@ -20,32 +19,10 @@ from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey,
 PRODUCT = "tomos-sip"
 SCHEMA_VERSION = 1
 FEATURES = ("multiple_sip_accounts", "advanced_codec_controls", "encrypted_backup")
-CODE_PREFIX = "TOMOS-PREM"
-_CODE_PATTERN = re.compile(r"TOMOS-PREM-(?:[A-Z2-7]{4}-){3}[A-Z2-7]{4}")
 
 
 def _canonical_json(value: dict[str, Any]) -> bytes:
     return json.dumps(value, sort_keys=True, separators=(",", ":"), ensure_ascii=False).encode("utf-8")
-
-
-def generate_activation_code() -> str:
-    """Generate 80 bits of cryptographically secure randomness, grouped for entry."""
-    raw = secrets.token_bytes(10)
-    encoded = base64.b32encode(raw).decode("ascii").rstrip("=")
-    return f"{CODE_PREFIX}-" + "-".join(encoded[i:i + 4] for i in range(0, 16, 4))
-
-
-def write_activation_qr(code: str, path: Path) -> None:
-    """Write a private PNG QR image containing only a validated one-time activation code."""
-    normalized = "".join(code.split()).upper() if isinstance(code, str) else ""
-    if not _CODE_PATTERN.fullmatch(normalized):
-        raise ValueError("Cannot create a QR code from an invalid activation code.")
-    path.parent.mkdir(parents=True, exist_ok=True)
-    qr = qrcode.QRCode(version=None, error_correction=ERROR_CORRECT_M, box_size=10, border=4)
-    qr.add_data(normalized)
-    qr.make(fit=True)
-    qr.make_image(fill_color="black", back_color="white").save(path, format="PNG")
-    path.chmod(0o600)
 
 
 def write_offline_licence_qr(document: dict[str, Any], path: Path) -> None:
@@ -100,11 +77,10 @@ def _public_key(path: Path) -> Ed25519PublicKey:
     return key
 
 
-def issue_licence(private_path: Path, customer: str = "") -> tuple[str, dict[str, Any]]:
+def issue_licence(private_path: Path, customer: str = "") -> dict[str, Any]:
     customer = customer.strip()
     if len(customer) > 120:
         raise ValueError("Customer reference must be 120 characters or fewer.")
-    code = generate_activation_code()
     issued = datetime.now(timezone.utc).replace(microsecond=0).isoformat().replace("+00:00", "Z")
     payload: dict[str, Any] = {
         "schema": SCHEMA_VERSION,
@@ -114,31 +90,15 @@ def issue_licence(private_path: Path, customer: str = "") -> tuple[str, dict[str
         "issued_at": issued,
         "customer_reference": customer,
         "features": list(FEATURES),
-        "activation_code_sha256": hashlib.sha256(code.encode("ascii")).hexdigest(),
+        "activation_code_sha256": secrets.token_hex(32),
     }
     signature = _private_key(private_path).sign(_canonical_json(payload))
-    return code, {
+    return {
         "payload": payload,
         "signature_algorithm": "Ed25519",
         "signed_payload": base64.b64encode(_canonical_json(payload)).decode("ascii"),
         "signature": base64.b64encode(signature).decode("ascii"),
     }
-
-
-def activation_code_matches(code: str, document: dict[str, Any]) -> bool:
-    """Compare a well-formed activation code without accepting lossy Unicode input."""
-    if not isinstance(code, str):
-        return False
-    normalized = "".join(code.split()).upper()
-    if not _CODE_PATTERN.fullmatch(normalized):
-        return False
-    payload = document.get("payload", {})
-    if not isinstance(payload, dict):
-        return False
-    expected = payload.get("activation_code_sha256", "")
-    if not isinstance(expected, str) or not re.fullmatch(r"[0-9a-f]{64}", expected):
-        return False
-    return secrets.compare_digest(expected, hashlib.sha256(normalized.encode("ascii")).hexdigest())
 
 
 def verify_licence(public_path: Path, document: dict[str, Any]) -> bool:

@@ -18,7 +18,7 @@ def issue_offline_licence(
     except (ValueError, TypeError, AttributeError) as error:
         raise ValueError("Device ID must be a valid UUID shown by TomOS SIP.") from error
 
-    _, document = issue_licence(private_path, customer)
+    document = issue_licence(private_path, customer)
     payload = dict(document["payload"])
     payload["device_id"] = normalized_device_id
     signed_payload = _canonical_json(payload)
