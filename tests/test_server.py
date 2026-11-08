@@ -2,6 +2,7 @@ import hashlib
 import json
 import tempfile
 import unittest
+import sys
 from concurrent.futures import ThreadPoolExecutor
 from threading import Barrier
 from pathlib import Path
@@ -36,6 +37,17 @@ class RedemptionApiTests(unittest.TestCase):
     def tearDown(self):
         self.db_patch.stop()
         self.temp.cleanup()
+
+
+    def test_server_command_binds_to_loopback_by_default(self):
+        with patch.object(sys, "argv", ["tomos-premiumgen-server"]), patch("uvicorn.run") as run:
+            self.assertEqual(server.main(), 0)
+        run.assert_called_once_with(
+            "tomos_premiumgen.server:app",
+            host="127.0.0.1",
+            port=8000,
+            log_level="info",
+        )
 
     def test_health_endpoint(self):
         self.assertEqual(server.health(), {"status": "ok"})
