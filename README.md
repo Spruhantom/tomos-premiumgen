@@ -26,6 +26,66 @@ curl -fsSL https://raw.githubusercontent.com/Spruhantom/tomos-premiumgen/main/in
 
 Uninstall removes the application, command links and desktop entry. It deliberately leaves system GTK/Python dependencies and signing keys untouched.
 
+## Debian home-server deployment (systemd + HTTPS)
+
+The installer has a separate server mode for a Debian host. It installs the optional
+FastAPI service into an isolated system virtual environment, creates a dedicated
+unprivileged `tomospremium` account, stores the SQLite database under
+`/var/lib/tomos-premiumgen`, and manages the API with a hardened systemd system
+service. Caddy is installed as the HTTPS reverse proxy and is configured to request
+a Let's Encrypt IP-address certificate using the `shortlived` ACME profile.
+
+After this change is merged into `main`, run this on the Debian server (replace
+the example address and email):
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/Spruhantom/tomos-premiumgen/main/install.sh | sudo bash -s -- --install-server --public-ip 203.0.113.10 --email admin@example.com
+```
+
+Use your real globally routable public IPv4 address, not the documentation example.
+The server installer refuses private, reserved or malformed addresses. It is
+Debian-only; the existing desktop installer remains available for Debian, Ubuntu,
+Fedora and Arch.
+
+The router must forward **TCP 80 and TCP 443** to the Debian server, and the host
+firewall must permit those ports. The router WAN IPv4 must match the supplied
+public IP; CGNAT prevents direct inbound port forwarding. Let's Encrypt IP
+certificates use a 160-hour lifetime, so Caddy must remain running and able to
+renew them automatically. If the ISP changes the public IP, rerun the server
+installer with the new address and ensure the router forwards to the host.
+
+The service listens only on `127.0.0.1:8000`; Caddy exposes
+`https://YOUR_PUBLIC_IP`. The reverse proxy limits request bodies and blocks
+the unused admin/import and interactive API documentation paths. Licence imports
+remain a local administrator CLI operation using the same database:
+
+```bash
+sudo -u tomospremium /opt/tomos-premiumgen-server/venv/bin/tomos-premiumgen register \
+  --public-key /path/to/public.pem \
+  --licence /path/to/customer.json \
+  --activation-code 'CUSTOMER-ACTIVATION-CODE' \
+  --database /var/lib/tomos-premiumgen/licences.sqlite3
+```
+
+Check the daemon and logs with:
+
+```bash
+sudo systemctl status tomos-premiumgen-server
+sudo journalctl -u tomos-premiumgen-server -f
+curl -fsS https://YOUR_PUBLIC_IP/health
+```
+
+Uninstall the server components (the licence database is deliberately retained):
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/Spruhantom/tomos-premiumgen/main/install.sh | sudo bash -s -- --uninstall-server
+```
+
+**Deployment limitation:** this API currently has no customer authentication or
+distributed rate limiter. The installer does not claim to provide those controls;
+monitor the service and restrict inbound traffic as appropriate before a
+commercial public launch. Back up `/var/lib/tomos-premiumgen` securely.
+
 ## GTK desktop workflow
 
 The desktop app now opens with five clear tasks instead of showing every field at once:
