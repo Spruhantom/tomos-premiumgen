@@ -2,7 +2,7 @@ name: Premium Generator CI
 
 on:
   push:
-    branches: [main, "feature/**", "feat/**"]
+    branches: [main, "feature/**", "feat/**", "fix/**"]
   pull_request:
   workflow_dispatch:
 
@@ -28,3 +28,24 @@ jobs:
           python -c "from tomos_premiumgen.gui import run_gui; assert callable(run_gui)"
       - name: Check installer syntax
         run: bash -n install.sh
+
+  gtk-smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install GTK 4 runtime and headless display
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y python3-gi gir1.2-gtk-4.0 python3-cryptography python3-qrcode python3-pil xvfb
+      - name: Launch GTK application in a headless display
+        shell: bash
+        run: |
+          set +e
+          PYTHONPATH=src timeout 8s xvfb-run -a /usr/bin/python3 -c 'from tomos_premiumgen.gui import run_gui; run_gui()'
+          status=$?
+          set -e
+          if [[ "$status" -ne 124 ]]; then
+            echo "GTK application exited unexpectedly (status $status)." >&2
+            exit "$status"
+          fi
+          echo "GTK application launched and remained running for 8 seconds."
