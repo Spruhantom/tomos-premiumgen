@@ -2,7 +2,7 @@ name: Premium Generator CI
 
 on:
   push:
-    branches: [main, "feature/**"]
+    branches: [main, "feature/**", "feat/**"]
   pull_request:
   workflow_dispatch:
 
@@ -22,3 +22,9 @@ jobs:
         run: python -m unittest discover -s tests -v
       - name: Check CLI
         run: tomos-premiumgen --help
+      - name: Check GTK module syntax and lazy import
+        run: |
+          python -m compileall -q src
+          python -c "from tomos_premiumgen.gui import run_gui; assert callable(run_gui)"
+      - name: Check installer syntax
+        run: bash -n install.sh
