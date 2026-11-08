@@ -26,14 +26,16 @@ curl -fsSL https://raw.githubusercontent.com/Spruhantom/tomos-premiumgen/main/in
 
 Uninstall removes the application, command links and desktop entry. It deliberately leaves system GTK/Python dependencies and signing keys untouched.
 
-## GTK desktop features
+## GTK desktop workflow
 
-- Generate Ed25519 signing and verification keys.
-- Generate online lifetime activation codes, signed licence JSON and a private QR image.
-- Issue device-bound offline lifetime licences using the UUID displayed by TomOS SIP.
-- Verify signed licence documents.
-- Copy newly generated online activation codes to the clipboard.
-- Keep private signing keys on the local administrator machine.
+The desktop app now opens with four clear tasks instead of showing every field at once:
+
+1. **Create online activation** — choose the signing key, optionally add a customer reference, and save the signed licence. The activation code is copied to the clipboard and displayed once; the private QR image is saved beside the licence.
+2. **Issue offline licence** — enter the device UUID shown in TomOS SIP and save a licence bound to that device.
+3. **Verify a licence** — select the public key and licence file to check the signature and supported licence contents.
+4. **Signing keys** — create the Ed25519 private/public key pair. The private key stays on the administrator's computer.
+
+Each task displays only the fields it needs, has a Home button, and reports success or a clear error. The command-line and Textual interfaces remain available for automation and terminal users.
 
 ## CLI and TUI remain available
 
