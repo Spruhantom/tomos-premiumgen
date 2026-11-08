@@ -15,6 +15,8 @@ from pathlib import Path
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel, Field
 
+from .storage import connect_licence_db
+
 DB_PATH = Path(os.environ.get("TOMOS_LICENCE_DB", "tomos-licences.sqlite3"))
 _CODE_PATTERN = re.compile(r"TOMOS-PREM-(?:[A-Z2-7]{4}-){3}[A-Z2-7]{4}")
 
@@ -22,28 +24,7 @@ app = FastAPI(title="TomOS Premium Licence API", version="0.1.0")
 
 
 def connect() -> sqlite3.Connection:
-    # Licence records contain customer references and device bindings. Create
-    # the database with owner-only permissions and reject symlink destinations.
-    DB_PATH.parent.mkdir(parents=True, exist_ok=True, mode=0o700)
-    flags = os.O_CREAT | os.O_RDWR | getattr(os, "O_NOFOLLOW", 0)
-    fd = os.open(DB_PATH, flags, 0o600)
-    try:
-        os.fchmod(fd, 0o600)
-    finally:
-        os.close(fd)
-    db = sqlite3.connect(DB_PATH, timeout=10)
-    db.row_factory = sqlite3.Row
-    db.execute("PRAGMA busy_timeout = 10000")
-    db.execute("""
-        CREATE TABLE IF NOT EXISTS licences (
-            code_hash TEXT PRIMARY KEY,
-            licence_id TEXT NOT NULL UNIQUE,
-            licence_json TEXT NOT NULL,
-            device_id TEXT,
-            redeemed_at TEXT
-        )
-    """)
-    return db
+    return connect_licence_db(DB_PATH)
 
 
 class RedeemRequest(BaseModel):
@@ -92,3 +73,33 @@ def redeem(request: RedeemRequest) -> RedeemResponse:
 def import_licence() -> dict:
     # Intentionally disabled: importing licence bundles is an offline admin CLI task.
     raise HTTPException(status_code=405, detail="Use the offline admin import command; this endpoint is disabled.")
+
+
+
+def main() -> int:
+    """Start the redemption API, bound to loopback unless explicitly overridden."""
+    import argparse
+    import uvicorn
+
+    parser = argparse.ArgumentParser(description="Run the TomOS Premium redemption API.")
+    parser.add_argument(
+        "--host",
+        default=os.environ.get("TOMOS_SERVER_HOST", "127.0.0.1"),
+        help="Bind address (default: 127.0.0.1; use a reverse proxy for public HTTPS).",
+    )
+    parser.add_argument(
+        "--port",
+        type=int,
+        default=int(os.environ.get("TOMOS_SERVER_PORT", "8000")),
+        help="TCP port (default: 8000).",
+    )
+    parser.add_argument("--log-level", choices=("critical", "error", "warning", "info", "debug"), default="info")
+    args = parser.parse_args()
+    if not 1 <= args.port <= 65535:
+        parser.error("--port must be between 1 and 65535")
+    uvicorn.run("tomos_premiumgen.server:app", host=args.host, port=args.port, log_level=args.log_level)
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
