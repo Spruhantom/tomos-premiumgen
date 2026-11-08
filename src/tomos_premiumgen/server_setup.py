@@ -59,11 +59,8 @@ def install_user_service(
     database = Path(database_path).expanduser()
     if not database.is_absolute():
         raise ValueError("Choose an absolute path for the licence database.")
+    content = build_user_service(database, port, python_executable)
     database.parent.mkdir(parents=True, exist_ok=True, mode=0o700)
-    try:
-        os.chmod(database.parent, 0o700)
-    except OSError:
-        pass
 
     service_dir = home_path / ".config" / "systemd" / "user"
     service_dir.mkdir(parents=True, exist_ok=True, mode=0o700)
@@ -72,7 +69,6 @@ def install_user_service(
     except OSError:
         pass
     service_path = service_dir / "tomos-premiumgen.service"
-    content = build_user_service(database, port, python_executable)
 
     flags = os.O_WRONLY | os.O_CREAT | os.O_EXCL | getattr(os, "O_NOFOLLOW", 0)
     try:
