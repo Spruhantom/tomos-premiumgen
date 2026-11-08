@@ -7,6 +7,7 @@ import sys
 from pathlib import Path
 
 from .licence import activation_code_matches, generate_keypair, issue_licence, read_json, verify_licence, write_activation_qr, write_json
+from .offline import issue_offline_licence
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -18,13 +19,19 @@ def build_parser() -> argparse.ArgumentParser:
     keygen.add_argument("--public-key", type=Path, required=True)
     keygen.add_argument("--force", action="store_true", help="Explicitly allow replacing existing key files.")
 
-    generate = commands.add_parser("generate", help="Generate a one-time activation code, signed licence and QR image.")
+    generate = commands.add_parser("generate", help="Generate an online activation code, signed licence and QR image.")
     generate.add_argument("--private-key", type=Path, required=True)
     generate.add_argument("--customer", default="", help="Optional internal customer reference; avoid personal data.")
     generate.add_argument("--output", type=Path, required=True)
     generate.add_argument("--qr-output", type=Path, help="QR PNG output path (default: <licence-output>.qr.png).")
 
-    register = commands.add_parser("register", help="Import a generated code and signed licence into the local redemption database.")
+    offline = commands.add_parser("issue-offline", help="Issue a signed lifetime licence for one device without a server.")
+    offline.add_argument("--private-key", type=Path, required=True)
+    offline.add_argument("--device-id", required=True, help="UUID displayed by TomOS SIP on the customer's device.")
+    offline.add_argument("--customer", default="", help="Optional internal customer reference; avoid personal data.")
+    offline.add_argument("--output", type=Path, required=True)
+
+    register = commands.add_parser("register", help="Import a generated code and signed licence into the optional redemption database.")
     register.add_argument("--public-key", type=Path, required=True)
     register.add_argument("--licence", type=Path, required=True)
     register.add_argument("--activation-code", required=True)
@@ -56,6 +63,15 @@ def main() -> int:
             print(f"Signed licence document: {args.output}")
             print(f"Activation QR image: {qr_output} (keep private; it grants redemption access).")
             print("Never commit activation codes, QR images or the private signing key.")
+            return 0
+        if args.command == "issue-offline":
+            if not args.private_key.is_file():
+                raise FileNotFoundError(f"Private key not found: {args.private_key}")
+            document = issue_offline_licence(args.private_key, args.device_id, args.customer)
+            write_json(args.output, document)
+            print(f"Offline lifetime licence issued for device {document['payload']['device_id']}.")
+            print(f"Signed licence document: {args.output}")
+            print("Transfer this file to the matching TomOS SIP installation; no server is used.")
             return 0
         if args.command == "register":
             import hashlib
