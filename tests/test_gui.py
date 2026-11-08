@@ -17,7 +17,7 @@ class GtkEntryPointTests(unittest.TestCase):
 
     def test_gui_uses_four_separate_guided_tasks(self):
         source = Path(gui.__file__).read_text(encoding="utf-8")
-        for page in ("online", "offline", "verify", "keys"):
+        for page in ("online", "offline", "verify", "keys", "server"):
             with self.subTest(page=page):
                 self.assertIn(f"self.build_{page}_page()", source)
                 self.assertIn(f'self.add_page_footer(page, "{page}"', source)
@@ -35,6 +35,15 @@ class GtkEntryPointTests(unittest.TestCase):
         home = source.split("def build_home(self)", 1)[1].split("def build_keys_page", 1)[0]
         self.assertNotIn("self.add_field(", home)
         self.assertIn("What would you like to do?", home)
+        self.assertIn("Redemption server setup", home)
+
+    def test_server_setup_is_loopback_only_and_does_not_autostart(self):
+        source = Path(gui.__file__).read_text(encoding="utf-8")
+        self.assertIn("self.build_server_page()", source)
+        self.assertIn("install_user_service(", source)
+        self.assertIn("does not start it", source)
+        self.assertIn("127.0.0.1", source)
+        self.assertIn("systemctl --user enable --now", source)
 
 
 if __name__ == "__main__":
