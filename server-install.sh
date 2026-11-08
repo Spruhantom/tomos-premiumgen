@@ -46,10 +46,13 @@ if [[ "$UNINSTALL" -eq 1 ]]; then
   systemctl disable --now tomos-premiumgen-server.service 2>/dev/null || true
   rm -f "$UNIT"
   systemctl daemon-reload
-  if [[ -f "$CADDYFILE" ]] && grep -qF "# BEGIN TOMOS PREMIUM API" "$CADDYFILE"; then
-    log "The managed Caddy block is present. Restore your previous Caddyfile from backup if you need other sites."
-    cp -a "$CADDYFILE" "${CADDYFILE}.tomos-premiumgen-backup"
+  if [[ -f "${CADDYFILE}.pre-tomos-premiumgen" ]]; then
+    cp -a "${CADDYFILE}.pre-tomos-premiumgen" "$CADDYFILE"
+    rm -f "${CADDYFILE}.pre-tomos-premiumgen"
+    systemctl restart caddy 2>/dev/null || true
+  elif [[ -f "$CADDYFILE" ]] && grep -qF "# BEGIN TOMOS PREMIUM API" "$CADDYFILE"; then
     rm -f "$CADDYFILE"
+    systemctl stop caddy 2>/dev/null || true
   fi
   rm -rf "$APP_DIR" "$CONFIG_DIR"
   log "Service and application files removed. Licence database retained at $STATE_DIR."
