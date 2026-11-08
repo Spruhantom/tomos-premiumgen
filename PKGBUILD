@@ -1,15 +1,15 @@
 pkgname=tomos-premiumgen
 pkgver=0.2.0
-pkgrel=3
+pkgrel=4
 pkgdesc="TomOS SIP Premium lifetime licence generator with GTK 4 desktop app"
 arch=('any')
 url="https://github.com/Spruhantom/tomos-premiumgen"
 license=('MIT')
 depends=('python' 'python-cryptography' 'python-qrcode' 'python-pillow' 'python-textual' 'python-gobject' 'gtk4')
 makedepends=('git' 'python-build' 'python-installer' 'python-setuptools')
-# Pin the source to the reviewed GTK GUI merge commit. This avoids depending on
-# a release tag that may not exist yet and makes the package source reproducible.
-source=("${pkgname}::git+https://github.com/Spruhantom/tomos-premiumgen.git#commit=a7d88fa85ccd84ad2c4aeb4a80789b8563c97381")
+# Pin the source to the reviewed guided redemption-server setup merge commit.
+# This keeps the Arch package reproducible without relying on a release tag.
+source=("${pkgname}::git+https://github.com/Spruhantom/tomos-premiumgen.git#commit=08bdc3771de2c5408fa40f8e912d02ea338e3982")
 sha256sums=('SKIP')
 
 build() {
