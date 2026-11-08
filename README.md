@@ -10,7 +10,7 @@ Review the installer before running it if you prefer to inspect scripts first:
 curl -fsSL https://raw.githubusercontent.com/Spruhantom/tomos-premiumgen/main/install.sh | bash
 ```
 
-The installer detects the distribution, installs GTK 4 and its Python bindings using the native package manager, then installs the Python application into an isolated per-user virtual environment. It creates a desktop-menu entry and does not run the application as root. The signing key is not created or copied by the installer.
+The installer detects the distribution, installs GTK 4 and its Python bindings using the native package manager, then installs the Python application into an isolated per-user virtual environment. It creates a desktop-menu entry and does not run the application as root. The signing key is not created or copied by the installer. To preview the detected distribution and required system packages without installing anything, run `curl -fsSL https://raw.githubusercontent.com/Spruhantom/tomos-premiumgen/main/install.sh | bash -s -- --check`.
 
 Launch **TomOS Premium Code Generator** from the desktop application menu, or run:
 
