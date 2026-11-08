@@ -8,7 +8,7 @@ from textual.app import App, ComposeResult
 from textual.containers import Horizontal, Vertical
 from textual.widgets import Button, Footer, Header, Input, Label, Static
 
-from .licence import generate_keypair, read_json, verify_licence, write_activation_qr, write_json, issue_licence
+from .licence import generate_keypair, read_json, verify_licence, write_activation_qr, write_offline_licence_qr, write_json, issue_licence
 from .offline import issue_offline_licence
 
 
@@ -87,7 +87,9 @@ class PremiumGeneratorApp(App[None]):
                     raise ValueError("Enter the device UUID shown in TomOS SIP.")
                 document = issue_offline_licence(private, self.value("device"), customer)
                 write_json(output, document)
-                self.report(f"Device-bound offline licence created: {output}\nDevice: {document['payload']['device_id']}\nTransfer the file securely to this device.")
+                qr = output.with_suffix(".qr.png")
+                write_offline_licence_qr(document, qr)
+                self.report(f"Device-bound offline licence created: {output}\nDevice: {document['payload']['device_id']}\nOffline licence QR image: {qr}\nThe QR contains the complete signed licence; keep it private.")
             elif action == "verify":
                 if not public.is_file():
                     raise FileNotFoundError(f"Public key not found: {public}")
