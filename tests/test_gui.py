@@ -1,53 +1,37 @@
-"""Lightweight checks for the optional GTK desktop entry point."""
+"""Checks for the offline-only GTK desktop entry point."""
 from pathlib import Path
 import unittest
-
 import tomos_premiumgen.gui as gui
-
 
 class GtkEntryPointTests(unittest.TestCase):
     def test_gui_entrypoint_is_lazy(self):
-        # Importing the module must not require a graphical session or PyGObject.
         self.assertTrue(callable(gui.run_gui))
 
-    def test_gui_module_has_security_warning_and_clipboard(self):
+    def test_gui_module_warns_about_private_signing_key(self):
         source = Path(gui.__file__).read_text(encoding="utf-8")
         self.assertIn("private signing key stays on this computer", source)
-        self.assertIn("self.get_clipboard().set(code)", source)
 
-    def test_gui_uses_five_separate_guided_tasks(self):
+    def test_gui_exposes_only_offline_licence_tasks(self):
         source = Path(gui.__file__).read_text(encoding="utf-8")
-        for page in ("online", "offline", "verify", "keys", "server"):
-            with self.subTest(page=page):
-                self.assertIn(f"self.build_{page}_page()", source)
-                if page == "server":
-                    self.assertIn('page, "server", "Prepare server service"', source)
-                else:
-                    self.assertIn(f'self.add_page_footer(page, "{page}"', source)
+        self.assertIn("self.build_offline_page()", source)
+        self.assertIn("self.build_verify_page()", source)
+        self.assertIn("self.build_keys_page()", source)
+        self.assertNotIn("build_online_page", source)
+        self.assertNotIn("build_server_page", source)
+        self.assertNotIn("install_user_service", source)
 
-    def test_online_and_offline_pages_have_separate_inputs(self):
+    def test_offline_page_uses_device_uuid_and_exports_qr(self):
         source = Path(gui.__file__).read_text(encoding="utf-8")
         self.assertIn('"device", "TomOS SIP device UUID"', source)
-        self.assertIn('"customer", "Customer reference (optional)"', source)
-        self.assertIn('"output", "Save licence as"', source)
-        self.assertIn("Create activation code", source)
+        self.assertIn("issue_offline_licence(", source)
+        self.assertIn("write_offline_licence_qr(", source)
         self.assertIn("Create offline licence", source)
 
-    def test_desktop_home_screen_does_not_show_all_form_fields(self):
-        source = Path(gui.__file__).read_text(encoding="utf-8")
-        home = source.split("def build_home(self)", 1)[1].split("def build_keys_page", 1)[0]
-        self.assertNotIn("self.add_field(", home)
-        self.assertIn("What would you like to do?", home)
-        self.assertIn("Redemption server setup", home)
-
-    def test_server_setup_is_loopback_only_and_does_not_autostart(self):
-        source = Path(gui.__file__).read_text(encoding="utf-8")
-        self.assertIn("self.build_server_page()", source)
-        self.assertIn("install_user_service(", source)
-        self.assertIn("does not start it", source)
-        self.assertIn("127.0.0.1", source)
-        self.assertIn("systemctl --user enable --now", source)
-
+    def test_gui_has_no_online_activation_or_server_setup(self):
+        source = Path(gui.__file__).read_text(encoding="utf-8").lower()
+        self.assertNotIn("redemption server", source)
+        self.assertNotIn("activation code", source)
+        self.assertNotIn("systemctl --user enable --now", source)
 
 if __name__ == "__main__":
     unittest.main()

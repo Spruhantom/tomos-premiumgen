@@ -6,10 +6,7 @@ the tested core modules; the CLI and Textual interface remain available.
 from __future__ import annotations
 
 from pathlib import Path
-import shlex
-import sys
 
-from .server_setup import install_user_service
 
 
 def run_gui() -> None:
@@ -26,10 +23,8 @@ def run_gui() -> None:
 
     from .licence import (
         generate_keypair,
-        issue_licence,
         read_json,
         verify_licence,
-        write_activation_qr,
         write_json,
     )
     from .offline import issue_offline_licence
@@ -67,10 +62,8 @@ def run_gui() -> None:
 
             self.build_home()
             self.build_keys_page()
-            self.build_online_page()
             self.build_offline_page()
             self.build_verify_page()
-            self.build_server_page()
             self.update_key_status()
             self.stack.set_visible_child_name("home")
 
@@ -183,11 +176,6 @@ def run_gui() -> None:
 
             tasks = [
                 (
-                    "Create online activation",
-                    "Make an activation code and signed licence for a customer.",
-                    "online",
-                ),
-                (
                     "Issue offline licence",
                     "Create a licence tied to one TomOS SIP device UUID.",
                     "offline",
@@ -202,11 +190,7 @@ def run_gui() -> None:
                     "Create or check the keys used to sign and verify licences.",
                     "keys",
                 ),
-                (
-                    "Redemption server setup",
-                    "Prepare a local service for customers to redeem online activation codes.",
-                    "server",
-                ),
+
             ]
             for title_text, description, destination in tasks:
                 button = Gtk.Button()
@@ -232,7 +216,7 @@ def run_gui() -> None:
 
             security = Gtk.Label(
                 label="Security: the private signing key stays on this computer. "
-                      "Send activation codes and QR images to customers privately."
+                      "Transfer device-bound licence files and QR images privately."
             )
             security.set_wrap(True)
             security.set_xalign(0)
@@ -258,32 +242,11 @@ def run_gui() -> None:
             )
             self.add_page_footer(page, "keys", "Create signing keys", self.on_keygen)
 
-        def build_online_page(self) -> None:
-            page, grid = self.make_page(
-                "online",
-                "Create online activation",
-                "Create a customer activation code, signed licence file and private QR image. "
-                "The activation code will also be copied to your clipboard.",
-            )
-            self.add_field(
-                "online", grid, 0, "private", "Private signing key",
-                str(default_private), "open",
-            )
-            self.add_field(
-                "online", grid, 1, "customer", "Customer reference (optional)",
-                placeholder="For example, an order reference",
-            )
-            self.add_field(
-                "online", grid, 2, "output", "Save licence as",
-                str(documents_dir / "online-licence.json"), "save",
-            )
-            self.add_page_footer(page, "online", "Create activation code", self.on_online)
-
         def build_offline_page(self) -> None:
             page, grid = self.make_page(
                 "offline",
                 "Issue offline licence",
-                "Use this when the customer's device cannot redeem an activation code online. "
+                "Create a signed licence for one device. "
                 "Enter the device UUID displayed by TomOS SIP.",
             )
             self.add_field(
@@ -317,91 +280,9 @@ def run_gui() -> None:
             )
             self.add_field(
                 "verify", grid, 1, "licence", "Licence file",
-                str(documents_dir / "online-licence.json"), "open",
+                str(documents_dir / "offline-licence.json"), "open",
             )
             self.add_page_footer(page, "verify", "Verify licence", self.on_verify)
-
-        def build_server_page(self) -> None:
-            page, grid = self.make_page(
-                "server",
-                "Redemption server setup",
-                "Prepare a per-user systemd service for online activation. This wizard "
-                "keeps the API on this computer (127.0.0.1), does not start it, and "
-                "does not configure public internet access or HTTPS.",
-            )
-            self.add_field(
-                "server", grid, 0, "database", "Licence database",
-                str(Path.home() / ".local" / "share" / "tomos-premiumgen" / "licences.sqlite3"),
-            )
-            self.add_field(
-                "server", grid, 1, "port", "Local port", "8000",
-                placeholder="1–65535",
-            )
-            note = Gtk.Label(
-                label="After creating the service, install the optional FastAPI/uvicorn "
-                      "components if needed, then enable it with the commands shown. "
-                      "Import licences locally with the register command; never upload "
-                      "your signing key to the server."
-            )
-            note.set_wrap(True)
-            note.set_xalign(0)
-            note.add_css_class("dim-label")
-            page.append(note)
-            self.add_page_footer(
-                page, "server", "Prepare server service", self.on_server_setup
-            )
-
-        def on_server_setup(self, _button) -> None:
-            def operation():
-                database = self.get_path("server", "database")
-                port_text = self.get_value("server", "port")
-                if not port_text.isdecimal():
-                    raise ValueError("Enter a port number between 1 and 65535.")
-                port = int(port_text)
-                service = install_user_service(
-                    database, port, python_executable=sys.executable
-                )
-                pip_command = (
-                    f"{shlex.quote(sys.executable)} -m pip install "
-                    "'fastapi>=0.115.0' 'uvicorn[standard]>=0.30.0'"
-                )
-                start_command = (
-                    "systemctl --user daemon-reload && "
-                    "systemctl --user enable --now tomos-premiumgen.service"
-                )
-                health_command = f"curl -fsS http://127.0.0.1:{port}/health"
-                public_key = shlex.quote(str(default_public))
-                database_arg = shlex.quote(str(database))
-                register_command = (
-                    f"tomos-premiumgen register --public-key {public_key} "
-                    " --licence '<signed-licence.json>' "
-                    '--activation-code "$ACTIVATION_CODE" '
-                    f"--database {database_arg}"
-                )
-                return "\n".join([
-                    "SERVICE FILE CREATED — it has not been started.",
-                    f"Service: {service}",
-                    f"Database: {database}",
-                    f"Local address: 127.0.0.1:{port}",
-                    "",
-                    "1. Install the optional server components (if not already installed):",
-                    pip_command,
-                    "",
-                    "2. Enable and start the user service:",
-                    start_command,
-                    "",
-                    "3. Check its local health endpoint:",
-                    health_command,
-                    "",
-                    "4. Register each signed licence on this computer using:",
-                    register_command,
-                    "",
-                    "Keep the API behind an HTTPS reverse proxy before remote use. "
-                    "Do not expose this loopback service directly to the internet. "
-                    "This starter service does not include customer authentication, "
-                    "payment processing, remote revocation or distributed rate limiting.",
-                ])
-            self.run_action("server", operation)
 
         def show_page(self, name: str) -> None:
             self.stack.set_visible_child_name(name)
@@ -477,26 +358,6 @@ def run_gui() -> None:
                 )
             self.run_action("keys", operation)
 
-        def on_online(self, _button) -> None:
-            def operation():
-                private = self.get_path("online", "private")
-                if not private.is_file():
-                    raise FileNotFoundError(f"Private signing key not found: {private}")
-                output = self.get_path("online", "output")
-                code, document = issue_licence(private, self.get_value("online", "customer"))
-                qr = output.with_suffix(".qr.png")
-                write_json(output, document)
-                write_activation_qr(code, qr)
-                self.get_clipboard().set(code)
-                return (
-                    "ONLINE ACTIVATION CREATED\n\n"
-                    f"Activation code (copied to clipboard):\n{code}\n\n"
-                    f"Signed licence: {output}\nPrivate QR image: {qr}\n\n"
-                    "Send the code and QR image privately to the customer. "
-                    "This is the only time the code is displayed."
-                )
-            self.run_action("online", operation)
-
         def on_offline(self, _button) -> None:
             def operation():
                 private = self.get_path("offline", "private")
@@ -510,11 +371,14 @@ def run_gui() -> None:
                     private, device_id, self.get_value("offline", "customer")
                 )
                 write_json(output, document)
+                qr = output.with_suffix(".qr.png")
+                from .licence import write_offline_licence_qr
+                write_offline_licence_qr(document, qr)
                 return (
                     "OFFLINE LICENCE CREATED\n"
                     f"Device: {document['payload']['device_id']}\n"
-                    f"Signed licence: {output}\n\n"
-                    "Transfer this file securely to the matching device."
+                    f"Signed licence: {output}\nQR image: {qr}\n\n"
+                    "Transfer either file securely to the matching device."
                 )
             self.run_action("offline", operation)
 
