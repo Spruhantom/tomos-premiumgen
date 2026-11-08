@@ -6,7 +6,7 @@ import argparse
 import sys
 from pathlib import Path
 
-from .licence import activation_code_matches, generate_keypair, issue_licence, read_json, verify_licence, write_activation_qr, write_json
+from .licence import activation_code_matches, generate_keypair, issue_licence, read_json, verify_licence, write_activation_qr, write_offline_licence_qr, write_json
 from .offline import issue_offline_licence
 from .storage import connect_licence_db
 
@@ -31,6 +31,7 @@ def build_parser() -> argparse.ArgumentParser:
     offline.add_argument("--device-id", required=True, help="UUID displayed by TomOS SIP on the customer's device.")
     offline.add_argument("--customer", default="", help="Optional internal customer reference; avoid personal data.")
     offline.add_argument("--output", type=Path, required=True)
+    offline.add_argument("--qr-output", type=Path, help="QR PNG output path (default: <licence-output>.qr.png).")
 
     register = commands.add_parser("register", help="Import a generated code and signed licence into the optional redemption database.")
     register.add_argument("--public-key", type=Path, required=True)
@@ -76,9 +77,12 @@ def main() -> int:
                 raise FileNotFoundError(f"Private key not found: {args.private_key}")
             document = issue_offline_licence(args.private_key, args.device_id, args.customer)
             write_json(args.output, document)
+            qr_output = args.qr_output or args.output.with_suffix(".qr.png")
+            write_offline_licence_qr(document, qr_output)
             print(f"Offline lifetime licence issued for device {document['payload']['device_id']}.")
             print(f"Signed licence document: {args.output}")
-            print("Transfer this file to the matching TomOS SIP installation; no server is used.")
+            print(f"Offline licence QR image: {qr_output} (contains the signed licence; keep private).")
+            print("The QR contains the complete signed licence; the receiving app must support scanning/import.")
             return 0
         if args.command == "register":
             import hashlib
