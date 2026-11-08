@@ -27,7 +27,10 @@ jobs:
           python -m compileall -q src
           python -c "from tomos_premiumgen.gui import run_gui; assert callable(run_gui)"
       - name: Check installer syntax
-        run: bash -n install.sh
+        run: |
+          bash -n install.sh
+          bash -n server-install.sh
+          bash server-install.sh --help
       - name: Test installer distribution detection without system changes
         run: bash tests/test_installer.sh
 
