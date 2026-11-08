@@ -48,6 +48,21 @@ def write_activation_qr(code: str, path: Path) -> None:
     path.chmod(0o600)
 
 
+def write_offline_licence_qr(document: dict[str, Any], path: Path) -> None:
+    """Write the complete signed device-bound licence as a private JSON QR PNG."""
+    payload = document.get("payload")
+    if not isinstance(payload, dict) or not payload.get("device_id"):
+        raise ValueError("Offline QR requires a device-bound licence document.")
+    if document.get("signature_algorithm") != "Ed25519" or not document.get("signature") or not document.get("signed_payload"):
+        raise ValueError("Offline QR requires a complete Ed25519-signed licence.")
+    encoded = json.dumps(document, sort_keys=True, separators=(",", ":"), ensure_ascii=False)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    qr = qrcode.QRCode(version=None, error_correction=ERROR_CORRECT_M, box_size=8, border=4)
+    qr.add_data(encoded)
+    qr.make(fit=True)
+    qr.make_image(fill_color="black", back_color="white").save(path, format="PNG")
+    path.chmod(0o600)
+
 def generate_keypair(private_path: Path, public_path: Path, overwrite: bool = False) -> None:
     if private_path.resolve() == public_path.resolve():
         raise ValueError("Private and public key paths must be different.")
