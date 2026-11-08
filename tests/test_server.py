@@ -9,6 +9,7 @@ from pathlib import Path
 from unittest.mock import patch
 
 from fastapi import HTTPException
+from fastapi.testclient import TestClient
 
 from tomos_premiumgen import server
 from tomos_premiumgen.licence import (
@@ -113,6 +114,65 @@ class RedemptionApiTests(unittest.TestCase):
             results = [first.result(timeout=15), second.result(timeout=15)]
 
         self.assertCountEqual(results, [200, 409])
+
+
+    def test_complete_cli_to_http_redemption_first_repeat_and_other_device(self):
+        private_key = Path(self.temp.name) / "issuer-private.pem"
+        public_key = Path(self.temp.name) / "issuer-public.pem"
+        licence_file = Path(self.temp.name) / "issued-licence.json"
+        database = Path(self.temp.name) / "registered" / "licences.sqlite3"
+        generate_keypair(private_key, public_key)
+        code, document = issue_licence(private_key, "cross-component-integration")
+        write_json(licence_file, document)
+
+        output = io.StringIO()
+        with patch.object(sys, "argv", [
+            "tomos-premiumgen", "register",
+            "--public-key", str(public_key),
+            "--licence", str(licence_file),
+            "--activation-code", code,
+            "--database", str(database),
+        ]), contextlib.redirect_stdout(output), contextlib.redirect_stderr(output):
+            self.assertEqual(main(), 0)
+
+        with patch.object(server, "DB_PATH", database):
+            client = TestClient(server.app)
+            first = client.post("/v1/redeem", json={
+                "activation_code": code,
+                "device_id": "android-installation-0001",
+            })
+            self.assertEqual(first.status_code, 200)
+            returned = first.json()["licence"]
+            self.assertEqual(returned, document)
+            self.assertTrue(verify_licence(public_key, returned))
+
+            repeated = client.post("/v1/redeem", json={
+                "activation_code": code,
+                "device_id": "android-installation-0001",
+            })
+            self.assertEqual(repeated.status_code, 200)
+            self.assertEqual(repeated.json()["licence"], document)
+
+            other_device = client.post("/v1/redeem", json={
+                "activation_code": code,
+                "device_id": "android-installation-0002",
+            })
+            self.assertEqual(other_device.status_code, 409)
+            self.assertIn("another device", other_device.json()["detail"])
+
+    def test_http_endpoint_rejects_unknown_and_malformed_codes(self):
+        with patch.object(server, "DB_PATH", self.database):
+            client = TestClient(server.app)
+            unknown = client.post("/v1/redeem", json={
+                "activation_code": generate_activation_code(),
+                "device_id": "android-installation-0003",
+            })
+            self.assertEqual(unknown.status_code, 404)
+            malformed = client.post("/v1/redeem", json={
+                "activation_code": "not-a-tomos-code",
+                "device_id": "android-installation-0003",
+            })
+            self.assertEqual(malformed.status_code, 400)
 
     def test_admin_import_endpoint_stays_disabled(self):
         with self.assertRaises(HTTPException) as caught:
