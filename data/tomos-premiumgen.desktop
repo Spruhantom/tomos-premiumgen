@@ -1,0 +1,8 @@
+[Desktop Entry]
+Type=Application
+Name=TomOS Premium Code Generator
+Comment=Generate and verify TomOS SIP Premium lifetime licences
+Exec=tomos-premiumgen-gui
+Terminal=false
+Categories=Utility;Development;
+StartupNotify=true
