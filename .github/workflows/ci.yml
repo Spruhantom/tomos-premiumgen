@@ -68,3 +68,50 @@ jobs:
           runuser -u builder -- makepkg --nodeps --noconfirm
       - name: Verify package archive was created
         run: test -n "$(find . -maxdepth 1 -name 'tomos-premiumgen-*.pkg.tar.*' -print -quit)"
+
+  installer-integration:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - distro: debian
+            image: debian:stable-slim
+          - distro: fedora
+            image: fedora:latest
+          - distro: arch
+            image: archlinux:latest
+    container:
+      image: ${{ matrix.image }}
+    env:
+      HOME: /tmp/tomos-home
+      XDG_DATA_HOME: /tmp/tomos-data
+      XDG_BIN_HOME: /tmp/tomos-bin
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install installer prerequisites on Debian
+        if: matrix.distro == 'debian'
+        run: |
+          apt-get update
+          DEBIAN_FRONTEND=noninteractive apt-get install -y curl python3
+      - name: Install installer prerequisites on Fedora
+        if: matrix.distro == 'fedora'
+        run: dnf install -y curl python3
+      - name: Install installer prerequisites on Arch
+        if: matrix.distro == 'arch'
+        run: pacman -Syu --noconfirm --needed curl python
+      - name: Run complete user-space installation
+        run: |
+          mkdir -p "$HOME" "$XDG_DATA_HOME" "$XDG_BIN_HOME"
+          bash install.sh
+          "$XDG_BIN_HOME/tomos-premiumgen" --help
+          test -x "$XDG_BIN_HOME/tomos-premiumgen-gui"
+          test -f "$XDG_DATA_HOME/applications/tomos-premiumgen.desktop"
+      - name: Verify clean uninstall
+        run: |
+          bash install.sh --uninstall
+          test ! -e "$XDG_DATA_HOME/tomos-premiumgen"
+          test ! -e "$XDG_BIN_HOME/tomos-premiumgen"
+          test ! -e "$XDG_BIN_HOME/tomos-premiumgen-tui"
+          test ! -e "$XDG_BIN_HOME/tomos-premiumgen-gui"
+          test ! -e "$XDG_DATA_HOME/applications/tomos-premiumgen.desktop"
