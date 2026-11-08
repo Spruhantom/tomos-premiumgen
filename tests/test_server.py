@@ -13,6 +13,8 @@ from unittest.mock import patch
 from fastapi import HTTPException
 from fastapi.testclient import TestClient
 
+from tomos_premiumgen.cli import main
+
 from tomos_premiumgen import server
 from tomos_premiumgen.licence import (
     generate_activation_code,
