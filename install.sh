@@ -18,7 +18,12 @@ if [[ "${1:-}" == "--uninstall" ]]; then
   log "Application removed. System GTK/Python packages and signing keys were left untouched."
   exit 0
 fi
-[[ $# -eq 0 ]] || die "Usage: install.sh [--uninstall]"
+CHECK_ONLY=0
+if [[ "${1:-}" == "--check" && $# -eq 1 ]]; then
+  CHECK_ONLY=1
+elif [[ $# -ne 0 ]]; then
+  die "Usage: install.sh [--check|--uninstall]"
+fi
 
 command -v curl >/dev/null 2>&1 || die "curl is required."
 command -v python3 >/dev/null 2>&1 || die "Python 3.10 or newer is required."
@@ -28,9 +33,10 @@ if sys.version_info < (3, 10):
     raise SystemExit("Python 3.10 or newer is required.")
 PY
 
-[[ -r /etc/os-release ]] || die "Cannot identify this Linux distribution."
-# shellcheck disable=SC1091
-source /etc/os-release
+OS_RELEASE_FILE="${TOMOS_OS_RELEASE_FILE:-/etc/os-release}"
+[[ -r "$OS_RELEASE_FILE" ]] || die "Cannot identify this Linux distribution (missing $OS_RELEASE_FILE)."
+# shellcheck disable=SC1090
+source "$OS_RELEASE_FILE"
 ID_LIKE="${ID_LIKE:-}"
 DISTRO="${ID:-}"
 if [[ "$DISTRO" == "debian" || "$DISTRO" == "ubuntu" || "$ID_LIKE" == *debian* ]]; then
@@ -41,6 +47,13 @@ elif [[ "$DISTRO" == "arch" || "$ID_LIKE" == *arch* || "$DISTRO" == "manjaro" ||
   PM="pacman"; GTK_PACKAGES=(python-gobject gtk4); BASE_PACKAGES=(python python-pip curl)
 else
   die "Unsupported distribution: $DISTRO. Supported: Debian, Ubuntu, Fedora and Arch Linux."
+fi
+
+if [[ "$CHECK_ONLY" -eq 1 ]]; then
+  log "Distribution detected: ${PRETTY_NAME:-$DISTRO} (ID=$DISTRO, package manager=$PM)."
+  log "Base packages: ${BASE_PACKAGES[*]}."
+  log "GTK packages: ${GTK_PACKAGES[*]}."
+  exit 0
 fi
 
 if ! command -v sudo >/dev/null 2>&1 && [[ $EUID -ne 0 ]]; then
