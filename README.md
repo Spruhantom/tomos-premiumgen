@@ -35,7 +35,7 @@ unprivileged `tomospremium` account, stores the SQLite database under
 service. Caddy is installed as the HTTPS reverse proxy and is configured to request
 a Let's Encrypt IP-address certificate using the `shortlived` ACME profile.
 
-After this change is merged into `main`, run this on the Debian server (replace
+The installer is now available on `main`. Run this on the Debian server (replace
 the example address and email):
 
 ```bash
@@ -46,6 +46,8 @@ Use your real globally routable public IPv4 address, not the documentation examp
 The server installer refuses private, reserved or malformed addresses. It is
 Debian-only; the existing desktop installer remains available for Debian, Ubuntu,
 Fedora and Arch.
+
+See [the full home-server deployment guide](docs/HOME_SERVER_DEPLOYMENT.md) for operational checks, backups and troubleshooting.
 
 The router must forward **TCP 80 and TCP 443** to the Debian server, and the host
 firewall must permit those ports. The router WAN IPv4 must match the supplied
