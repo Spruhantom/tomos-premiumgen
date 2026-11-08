@@ -51,3 +51,20 @@ jobs:
             exit "$status"
           fi
           echo "GTK application launched and remained running for 8 seconds."
+
+  arch-package:
+    runs-on: ubuntu-latest
+    container:
+      image: archlinux:latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Arch build and runtime dependencies
+        run: |
+          pacman -Syu --noconfirm --needed base-devel git python python-build python-installer python-setuptools python-cryptography python-qrcode python-pillow python-textual python-gobject gtk4
+      - name: Build package as an unprivileged user
+        run: |
+          useradd --create-home builder
+          chown -R builder:builder "$GITHUB_WORKSPACE"
+          runuser -u builder -- makepkg --nodeps --noconfirm
+      - name: Verify package archive was created
+        run: test -n "$(find . -maxdepth 1 -name 'tomos-premiumgen-*.pkg.tar.*' -print -quit)"
