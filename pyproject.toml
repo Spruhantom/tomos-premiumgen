@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "tomos-premiumgen"
-version = "0.1.0"
+version = "0.2.0"
 description = "TomOS SIP Premium lifetime licence generator"
 readme = "README.md"
 requires-python = ">=3.10"
@@ -17,6 +17,7 @@ server = ["fastapi>=0.115.0", "uvicorn[standard]>=0.30.0"]
 [project.scripts]
 tomos-premiumgen = "tomos_premiumgen.cli:main"
 tomos-premiumgen-tui = "tomos_premiumgen.tui:run_tui"
+tomos-premiumgen-gui = "tomos_premiumgen.gui:run_gui"
 
 [tool.setuptools]
 package-dir = {"" = "src"}
