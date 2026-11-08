@@ -372,13 +372,12 @@ def run_gui() -> None:
                 health_command = f"curl -fsS http://127.0.0.1:{port}/health"
                 public_key = shlex.quote(str(default_public))
                 database_arg = shlex.quote(str(database))
-                register_command = "\n".join([
-                    "tomos-premiumgen register \\",
-                    f"  --public-key {public_key} \\",
-                    "  --licence <signed-licence.json> \\",
-                    '  --activation-code "$ACTIVATION_CODE" \\',
-                    f"  --database {database_arg}",
-                ])
+                register_command = (
+                    f"tomos-premiumgen register --public-key {public_key} "
+                    " --licence '<signed-licence.json>' "
+                    '--activation-code "$ACTIVATION_CODE" '
+                    f"--database {database_arg}"
+                )
                 return "\n".join([
                     "SERVICE FILE CREATED — it has not been started.",
                     f"Service: {service}",
